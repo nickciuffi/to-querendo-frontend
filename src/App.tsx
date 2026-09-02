@@ -1,41 +1,33 @@
-// Importe o Card e subcomponentes com base no caminho onde salvou o arquivo
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-  CardAction
-} from "@/components/ui/card"
+import { Suspense, lazy } from "react"
+import { Navigate, Route, Routes } from "react-router-dom"
+
+import { AppLayout } from "@/components/layout/app-layout"
+import { ProtectedRoute } from "@/components/protected-route"
+import { HomePage } from "@/pages/home-page"
+import { LoginPage } from "@/pages/login-page"
+
+const MapPage = lazy(() => import("@/pages/map-page").then((m) => ({ default: m.MapPage })))
 
 function App() {
   return (
-    <div className="flex items-center justify-center h-screen bg-amber-800">
-      <section>
-          <p className="text-blue-100 mb-5">To Querendo!!!</p>
-      <Card>
-        <CardHeader>
-          <CardTitle>Card Foda</CardTitle>
-          <CardDescription>Olha o milho</CardDescription>
-          <CardAction>
-            <button>R$ 10,00</button>
-          </CardAction>
-        </CardHeader>
-
-        <CardContent>
-          <p>Com manteiga e tudo mais</p>
-        </CardContent>
-
-        <CardFooter>
-          <button>Comprar</button>
-        </CardFooter>
-      </Card>
-
-      </section>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<HomePage />} />
+          <Route
+            path="mapa"
+            element={
+              <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted-foreground">Carregando mapa…</div>}>
+                <MapPage />
+              </Suspense>
+            }
+          />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
 export default App
-
