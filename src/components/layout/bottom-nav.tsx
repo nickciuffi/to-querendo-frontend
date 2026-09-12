@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 export function BottomNav() {
   return (
     <nav
-      className="shrink-0 border-t border-border bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/80"
+      className="shrink-0 border-t border-white/10 bg-[#1b2335] backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-between px-2">
@@ -22,10 +22,10 @@ export function BottomNav() {
           if ("disabled" in item) {
             return (
               <li key={item.label} className="flex-1">
-                <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 text-muted-foreground/50">
+                <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 text-white/40">
                   <Icon className="size-5" />
                   <span className="text-[0.65rem] font-medium">{item.label}</span>
-                  <span className="text-[0.55rem] leading-none text-muted-foreground/40">em breve</span>
+                  <span className="text-[0.55rem] leading-none text-white/30">em breve</span>
                 </div>
               </li>
             )
@@ -37,7 +37,7 @@ export function BottomNav() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-col items-center gap-0.5 px-2 py-2.5 text-muted-foreground transition-colors",
+                    "flex flex-col items-center gap-0.5 px-2 py-2.5 text-white/60 transition-colors",
                     isActive && "text-brand-orange"
                   )
                 }

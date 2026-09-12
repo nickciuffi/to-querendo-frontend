@@ -152,3 +152,8 @@ export function getBeachById(id: string): Beach | undefined {
 export function getProductsByVendorId(vendorId: string): Product[] {
   return PRODUCTS.filter((product) => product.vendorId === vendorId)
 }
+
+export function getOnlineSellersCount(productId: string): number {
+  const seed = productId.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return (seed % 20) + 3
+}

@@ -1,50 +1,37 @@
-import { Star } from "lucide-react"
+import { Users } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { getVendorById } from "@/lib/mock-data"
+import { Card, CardContent } from "@/components/ui/card"
+import { getOnlineSellersCount } from "@/lib/mock-data"
 import type { Product } from "@/lib/types"
 
-const currency = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-})
-
 export function ProductCard({ product }: { product: Product }) {
-  const vendor = getVendorById(product.vendorId)
+  const onlineSellers = getOnlineSellersCount(product.id)
 
   return (
-    <Card className="gap-3">
-      <CardHeader className="grid-cols-[auto_1fr] items-center gap-3">
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-brand-yellow/25 text-3xl">
-          {product.emoji}
-        </div>
+    <Card className="gap-1.5 rounded-xl border-2 border-[#FC800C] bg-[#0F172A] ring-0 py-0">
+      <div className="flex h-40 items-center justify-center rounded-lg bg-gradient-to-b from-[#FC800C]/25 to-[#FC800C]/5 text-3xl">
+        {product.emoji}
+      </div>
+
+      <CardContent className="flex flex-col gap-1.5 px-3 pb-3">
         <div className="min-w-0">
-          <p className="truncate font-heading text-sm font-semibold text-foreground">
+          <p className="truncate font-heading text-sm font-semibold text-white">
             {product.name}
           </p>
-          <p className="truncate text-xs text-muted-foreground">{product.description}</p>
+          <div className="flex items-center gap-1 text-[11px] text-white/60">
+            <Users className="size-3" />
+            <span className="truncate">{onlineSellers} vendedores online</span>
+          </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="flex items-center justify-between gap-2">
-        <span className="text-base font-semibold text-brand-orange">
-          {currency.format(product.price)}
-        </span>
-        {vendor && (
-          <Badge variant="outline" className="gap-1 text-muted-foreground">
-            <Star className="size-3 fill-brand-yellow text-brand-yellow" />
-            {vendor.rating.toFixed(1)} · {vendor.name}
-          </Badge>
-        )}
-      </CardContent>
-
-      <CardFooter>
-        <Button className="w-full bg-brand-orange text-white hover:bg-brand-orange/90">
+        <Button
+          size="sm"
+          className="w-full rounded-full bg-[#FC800C] text-white hover:bg-[#FC800C]/90"
+        >
           Tô Querendo
         </Button>
-      </CardFooter>
+      </CardContent>
     </Card>
   )
 }
