@@ -6,13 +6,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MapboxMap } from "@/components/mapbox-map"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachById, getProductsByVendorId, VENDORS } from "@/lib/mock-data"
+import { getBeachByName, getProductsByVendorId, VENDORS } from "@/lib/mock-data"
 
 const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
 
 export function MapPage() {
   const { user } = useAuth()
-  const beach = (user ? getBeachById(user.beachId) : undefined) ?? FALLBACK_BEACH
+  // A API ainda não retorna coordenadas da praia atual, só o nome — tentamos casar
+  // com o catálogo mockado e caímos no fallback quando não há correspondência.
+  const beach = (user ? getBeachByName(user.beachName) : undefined) ?? FALLBACK_BEACH
   const [selectedVendorId, setSelectedVendorId] = React.useState<string | null>(null)
 
   const selectedVendor = VENDORS.find((vendor) => vendor.id === selectedVendorId) ?? null

@@ -145,8 +145,9 @@ export function getVendorById(id: string): Vendor | undefined {
   return VENDORS.find((vendor) => vendor.id === id)
 }
 
-export function getBeachById(id: string): Beach | undefined {
-  return BEACHES.find((beach) => beach.id === id)
+export function getBeachByName(name: string): Beach | undefined {
+  const normalized = name.trim().toLowerCase()
+  return BEACHES.find((beach) => beach.name.toLowerCase() === normalized)
 }
 
 export function getProductsByVendorId(vendorId: string): Product[] {

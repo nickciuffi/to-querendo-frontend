@@ -16,7 +16,7 @@ import {
 import { InstructionsSection } from "@/components/instructions-section"
 import { ProductCard } from "@/components/product-card"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachById, PRODUCTS } from "@/lib/mock-data"
+import { PRODUCTS } from "@/lib/mock-data"
 import type { ProductCategory } from "@/lib/types"
 
 const CATEGORIES: { id: ProductCategory | "todos"; label: string }[] = [
@@ -30,7 +30,6 @@ const CATEGORIES: { id: ProductCategory | "todos"; label: string }[] = [
 export function HomePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const beach = user ? getBeachById(user.beachId) : undefined
   const [category, setCategory] = React.useState<ProductCategory | "todos">("todos")
 
   const products =
@@ -52,7 +51,7 @@ export function HomePage() {
             <p className="text-xs text-white/70">Olá, {firstName} 👋</p>
             <div className="flex items-center gap-1 text-sm font-medium text-white">
               <MapPin className="size-3.5 text-white" />
-              <span className="truncate">{beach ? `${beach.name}, ${beach.city}` : "Escolha uma praia"}</span>
+              <span className="truncate">{user?.beachName ?? "Escolha uma praia"}</span>
             </div>
           </div>
           <DropdownMenu>
@@ -103,7 +102,7 @@ export function HomePage() {
           </p>
       </div>
       <div className="px-4 pt-6 font-bold text-white lg:px-30">
-        Disponível na {beach ? `${beach.name}, ${beach.city}` : "Escolha uma praia"}
+        Disponível na {user?.beachName ?? "Escolha uma praia"}
       </div>
       <section className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4 lg:px-30 pt-3 pb-4">
         {products.map((product) => (
