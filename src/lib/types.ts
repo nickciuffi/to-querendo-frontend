@@ -1,5 +1,3 @@
-export type UserRole = "cliente" | "vendedor"
-
 export interface Beach {
   id: string
   name: string
@@ -34,6 +32,7 @@ export interface Product {
 export interface AuthUser {
   name: string
   email: string
-  role: UserRole
-  beachId: string
+  active: boolean
+  beachName: string
+  category: string
 }
