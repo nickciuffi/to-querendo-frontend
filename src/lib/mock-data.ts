@@ -145,10 +145,16 @@ export function getVendorById(id: string): Vendor | undefined {
   return VENDORS.find((vendor) => vendor.id === id)
 }
 
-export function getBeachById(id: string): Beach | undefined {
-  return BEACHES.find((beach) => beach.id === id)
+export function getBeachByName(name: string): Beach | undefined {
+  const normalized = name.trim().toLowerCase()
+  return BEACHES.find((beach) => beach.name.toLowerCase() === normalized)
 }
 
 export function getProductsByVendorId(vendorId: string): Product[] {
   return PRODUCTS.filter((product) => product.vendorId === vendorId)
+}
+
+export function getOnlineSellersCount(productId: string): number {
+  const seed = productId.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return (seed % 20) + 3
 }

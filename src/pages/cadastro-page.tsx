@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 import { Waves } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -9,12 +9,11 @@ import { useAuth } from "@/hooks/use-auth"
 import { ApiError } from "@/services/http-client"
 import * as authService from "@/services/auth-service"
 
-export function LoginPage() {
-  const { user, login } = useAuth()
+export function CadastroPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const justRegistered = Boolean((location.state as { justRegistered?: boolean } | null)?.justRegistered)
 
+  const [name, setName] = React.useState("")
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [error, setError] = React.useState<string | null>(null)
@@ -27,8 +26,8 @@ export function LoginPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
 
-    if (!email.trim() || !password.trim()) {
-      setError("Preencha seu e-mail e senha para continuar.")
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError("Preencha seu nome, e-mail e senha para continuar.")
       return
     }
 
@@ -36,14 +35,13 @@ export function LoginPage() {
     setIsSubmitting(true)
 
     try {
-      const { user: authUser, session } = await authService.login(email.trim(), password)
-      login({ user: authUser, session })
-      navigate("/", { replace: true })
+      await authService.register(name.trim(), email.trim(), password)
+      navigate("/login", { replace: true, state: { justRegistered: true } })
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 401 || err.status === 400)) {
-        setError("E-mail ou senha inválidos.")
+      if (err instanceof ApiError) {
+        setError(err.message || "Não foi possível criar sua conta. Tente novamente.")
       } else {
-        setError("Não foi possível entrar agora. Tente novamente em instantes.")
+        setError("Não foi possível criar sua conta agora. Tente novamente em instantes.")
       }
     } finally {
       setIsSubmitting(false)
@@ -60,12 +58,23 @@ export function LoginPage() {
           <div>
             <h1 className="font-heading text-2xl font-semibold text-foreground">Tô Querendo</h1>
             <p className="text-sm text-muted-foreground">
-              Entre para pedir sem sair da sua cadeira, direto na praia.
+              Peça o que quiser sem sair da sua cadeira, direto na praia.
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="name">Nome</Label>
+            <Input
+              id="name"
+              placeholder="Como podemos te chamar?"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              autoComplete="name"
+            />
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">E-mail</Label>
             <Input
@@ -86,13 +95,10 @@ export function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
           </div>
 
-          {!error && justRegistered && (
-            <p className="text-sm text-emerald-600">Conta criada! Faça login para continuar.</p>
-          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button
@@ -101,14 +107,14 @@ export function LoginPage() {
             disabled={isSubmitting}
             className="mt-2 bg-brand-orange text-white hover:bg-brand-orange/90"
           >
-            {isSubmitting ? "Entrando…" : "Entrar"}
+            {isSubmitting ? "Criando conta…" : "Criar conta"}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Ainda não tem conta?{" "}
-          <Link to="/cadastro" className="font-medium text-brand-orange hover:underline">
-            Cadastre-se
+          Já tem conta?{" "}
+          <Link to="/login" className="font-medium text-brand-orange hover:underline">
+            Entrar
           </Link>
         </p>
       </div>

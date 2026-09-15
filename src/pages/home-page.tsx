@@ -13,9 +13,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { InstructionsSection } from "@/components/instructions-section"
 import { ProductCard } from "@/components/product-card"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachById, PRODUCTS } from "@/lib/mock-data"
+import { PRODUCTS } from "@/lib/mock-data"
 import type { ProductCategory } from "@/lib/types"
 
 const CATEGORIES: { id: ProductCategory | "todos"; label: string }[] = [
@@ -29,7 +30,6 @@ const CATEGORIES: { id: ProductCategory | "todos"; label: string }[] = [
 export function HomePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const beach = user ? getBeachById(user.beachId) : undefined
   const [category, setCategory] = React.useState<ProductCategory | "todos">("todos")
 
   const products =
@@ -44,14 +44,14 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-        <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-4">
+    <div className="flex h-full flex-col overflow-y-auto bg-[#0F172A]">
+      <div className="sticky top-0 z-10 backdrop-blur">
+        <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4 bg-[#1b2335]">
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Olá, {firstName} 👋</p>
-            <div className="flex items-center gap-1 text-sm font-medium text-foreground">
-              <MapPin className="size-3.5 text-brand-blue" />
-              <span className="truncate">{beach ? `${beach.name}, ${beach.city}` : "Escolha uma praia"}</span>
+            <p className="text-xs text-white/70">Olá, {firstName} 👋</p>
+            <div className="flex items-center gap-1 text-sm font-medium text-white">
+              <MapPin className="size-3.5 text-white" />
+              <span className="truncate">{user?.beachName ?? "Escolha uma praia"}</span>
             </div>
           </div>
           <DropdownMenu>
@@ -78,7 +78,7 @@ export function HomePage() {
           </DropdownMenu>
         </header>
 
-        <div className="flex gap-2 overflow-x-auto px-4 py-3">
+        {/* <div className="flex gap-2 overflow-x-auto px-4 py-3">
           {CATEGORIES.map((item) => (
             <Badge
               key={item.id}
@@ -87,25 +87,35 @@ export function HomePage() {
               className={
                 category === item.id
                   ? "h-7 shrink-0 cursor-pointer bg-brand-orange px-3 text-white"
-                  : "h-7 shrink-0 cursor-pointer px-3 text-muted-foreground"
+                  : "h-7 shrink-0 cursor-pointer border-white/20 bg-white/10 px-3 text-white/80"
               }
             >
               {item.label}
             </Badge>
           ))}
-        </div>
+        </div> */}
       </div>
-
-      <section className="grid grid-cols-1 gap-3 px-4 pt-3 pb-4 sm:grid-cols-2">
+      <div className="px-4 pt-3 text-white lg:px-30 mt-10">
+          <h2 className="text-3xl font-bold leading-tight">O que você está querendo hoje?</h2>
+          <p className=" leading-snug text-white/55">
+            Avise os vendedores da praia e receba atendimento mais rápido direto no seu guarda-sol
+          </p>
+      </div>
+      <div className="px-4 pt-6 font-bold text-white lg:px-30">
+        Disponível na {user?.beachName ?? "Escolha uma praia"}
+      </div>
+      <section className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4 lg:px-30 pt-3 pb-4">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
         {products.length === 0 && (
-          <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
+          <p className="col-span-full py-10 text-center text-sm text-white/70">
             Nenhum produto encontrado nessa categoria.
           </p>
         )}
       </section>
+
+      <InstructionsSection />
     </div>
   )
 }
