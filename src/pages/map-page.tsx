@@ -14,7 +14,7 @@ export function MapPage() {
   const { user } = useAuth()
   // A API ainda não retorna coordenadas da praia atual, só o nome — tentamos casar
   // com o catálogo mockado e caímos no fallback quando não há correspondência.
-  const beach = (user ? getBeachByName(user.beachName) : undefined) ?? FALLBACK_BEACH
+  const beach = (user?.beach ? getBeachByName(user.beach.name) : undefined) ?? FALLBACK_BEACH
   const [selectedVendorId, setSelectedVendorId] = React.useState<string | null>(null)
 
   const selectedVendor = VENDORS.find((vendor) => vendor.id === selectedVendorId) ?? null

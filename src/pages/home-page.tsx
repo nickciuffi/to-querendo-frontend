@@ -51,7 +51,7 @@ export function HomePage() {
             <p className="text-xs text-white/70">Olá, {firstName} 👋</p>
             <div className="flex items-center gap-1 text-sm font-medium text-white">
               <MapPin className="size-3.5 text-white" />
-              <span className="truncate">{user?.beachName ?? "Escolha uma praia"}</span>
+              <span className="truncate">{user?.beach ? `${user.beach.name}, ${user.beach.city}` : "Escolha uma praia"}</span>
             </div>
           </div>
           <DropdownMenu>
@@ -102,7 +102,7 @@ export function HomePage() {
           </p>
       </div>
       <div className="px-4 pt-6 font-bold text-white lg:px-30">
-        Disponível na {user?.beachName ?? "Escolha uma praia"}
+        Disponível na {user?.beach ? `${user.beach.name}, ${user.beach.city}` : "Escolha uma praia"}
       </div>
       <section className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4 lg:px-30 pt-3 pb-4">
         {products.map((product) => (

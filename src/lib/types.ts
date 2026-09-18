@@ -29,10 +29,27 @@ export interface Product {
   vendorId: string
 }
 
+export interface UserBeach {
+  id: number
+  name: string
+  city: string
+  state: string
+}
+
+export interface UserCategory {
+  id: number
+  description: string
+}
+
+export type Role = "ROLE_TURISTA" | "ROLE_VENDEDOR" | "ROLE_ADMIN"
+
 export interface AuthUser {
   name: string
   email: string
   active: boolean
-  beachName: string
-  category: string
+  phone: string | null
+  cpf: string | null
+  photoUrl: string | null
+  beach: UserBeach | null
+  category: UserCategory | null
 }
