@@ -1,23 +1,30 @@
-import { Home, MapPin, ShoppingBag, UserRound } from "lucide-react"
+import { Home, MapPin, ShieldCheck, ShoppingBag, Store, UserRound } from "lucide-react"
 import { NavLink } from "react-router-dom"
 
+import { useAuth } from "@/hooks/use-auth"
 import { cn } from "@/lib/utils"
 
-const NAV_ITEMS = [
-  { to: "/", label: "Início", icon: Home, end: true },
-  { to: "/mapa", label: "Mapa", icon: MapPin, end: false },
-  { to: "#", label: "Pedidos", icon: ShoppingBag, disabled: true },
-  { to: "#", label: "Perfil", icon: UserRound, disabled: true },
-] as const
-
 export function BottomNav() {
+  const { hasRole } = useAuth()
+
+  const navItems = [
+    { to: "/", label: "Início", icon: Home, end: true },
+     ...(hasRole("ROLE_VENDEDOR")
+      ? [{ to: "/vendedor", label: "Vendedor", icon: Store, end: false }]
+      : []),
+    { to: "/mapa", label: "Mapa", icon: MapPin, end: false },
+    { to: "#", label: "Pedidos", icon: ShoppingBag, disabled: true },
+    { to: "#", label: "Perfil", icon: UserRound, disabled: true },
+    ...(hasRole("ROLE_ADMIN") ? [{ to: "/admin", label: "Admin", icon: ShieldCheck, end: false }] : []),
+  ]
+
   return (
     <nav
       className="shrink-0 border-t border-white/10 bg-[#1b2335] backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-between px-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon
           if ("disabled" in item) {
             return (

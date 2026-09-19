@@ -10,9 +10,12 @@ interface ApiEnvelope<T> {
 interface UsuarioMeusDadosResponse {
   email: string
   nome: string
+  telefone: string | null
+  cpf: string | null
+  urlFoto: string | null
   contaAtiva: boolean
-  praiaAtual: string
-  categoria: string
+  praiaAtual: { id: number; nome: string; cidade: string; estado: string } | null
+  categoria: { id: number; descricao: string } | null
 }
 
 function mapUsuario(body: UsuarioMeusDadosResponse): AuthUser {
@@ -20,8 +23,20 @@ function mapUsuario(body: UsuarioMeusDadosResponse): AuthUser {
     name: body.nome,
     email: body.email,
     active: body.contaAtiva,
-    beachName: body.praiaAtual,
-    category: body.categoria,
+    phone: body.telefone,
+    cpf: body.cpf,
+    photoUrl: body.urlFoto,
+    beach: body.praiaAtual
+      ? {
+          id: body.praiaAtual.id,
+          name: body.praiaAtual.nome,
+          city: body.praiaAtual.cidade,
+          state: body.praiaAtual.estado,
+        }
+      : null,
+    category: body.categoria
+      ? { id: body.categoria.id, description: body.categoria.descricao }
+      : null,
   }
 }
 
