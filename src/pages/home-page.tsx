@@ -1,9 +1,9 @@
 import * as React from "react"
-import { LogOut, MapPin } from "lucide-react"
+import { LogOut } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { BeachSelect } from "@/components/beach-select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,13 +16,43 @@ import {
 import { InstructionsSection } from "@/components/instructions-section"
 import { ProductCard } from "@/components/product-card"
 import { useAuth } from "@/hooks/use-auth"
-import { PRODUCTS } from "@/lib/mock-data"
+import { getProdutosByPraia } from "@/services/product-service"
+import type { Product } from "@/lib/types"
 
 export function HomePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  const products = PRODUCTS
+  const beachId = user?.beach?.id
+
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [isLoadingProducts, setIsLoadingProducts] = React.useState(false)
+  const [productsError, setProductsError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!beachId) return
+
+    let cancelled = false
+
+    async function loadProducts(id: number) {
+      setIsLoadingProducts(true)
+      setProductsError(null)
+      try {
+        const result = await getProdutosByPraia(id)
+        if (!cancelled) setProducts(result)
+      } catch {
+        if (!cancelled) setProductsError("Não foi possível carregar os produtos dessa praia.")
+      } finally {
+        if (!cancelled) setIsLoadingProducts(false)
+      }
+    }
+
+    loadProducts(beachId)
+
+    return () => {
+      cancelled = true
+    }
+  }, [beachId])
 
   const firstName = user?.name.split(" ")[0] ?? "visitante"
   const initial = (user?.name.trim()[0] ?? "?").toUpperCase()
@@ -38,10 +68,7 @@ export function HomePage() {
         <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4 bg-[#1b2335]">
           <div className="min-w-0">
             <p className="text-xs text-white/70">Olá, {firstName} 👋</p>
-            <div className="flex items-center gap-1 text-sm font-medium text-white">
-              <MapPin className="size-3.5 text-white" />
-              <span className="truncate">{user?.beach ? `${user.beach.name}, ${user.beach.city}` : "Escolha uma praia"}</span>
-            </div>
+            <BeachSelect />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
@@ -94,12 +121,22 @@ export function HomePage() {
         Disponível na {user?.beach ? `${user.beach.name}, ${user.beach.city}` : "Escolha uma praia"}
       </div>
       <section className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4 lg:px-30 pt-3 pb-4">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-        {products.length === 0 && (
+        {isLoadingProducts && (
           <p className="col-span-full py-10 text-center text-sm text-white/70">
-            Nenhum produto encontrado nessa categoria.
+            Carregando produtos...
+          </p>
+        )}
+        {!isLoadingProducts && productsError && (
+          <p className="col-span-full py-10 text-center text-sm text-destructive">
+            {productsError}
+          </p>
+        )}
+        {!isLoadingProducts &&
+          !productsError &&
+          products.map((product) => <ProductCard key={product.id} product={product} />)}
+        {!isLoadingProducts && !productsError && products.length === 0 && (
+          <p className="col-span-full py-10 text-center text-sm text-white/70">
+            {beachId ? "Nenhum produto encontrado nessa praia." : "Escolha uma praia para ver os produtos."}
           </p>
         )}
       </section>

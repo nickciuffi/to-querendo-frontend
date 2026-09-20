@@ -1,4 +1,4 @@
-import type { Beach, Product, Vendor } from "@/lib/types"
+import type { Beach, Vendor } from "@/lib/types"
 
 export const BEACHES: Beach[] = [
   { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] },
@@ -66,80 +66,13 @@ export const VENDORS: Vendor[] = [
   },
 ]
 
-export const PRODUCTS: Product[] = [
-  {
-    id: "1",
-    name: "Água de Coco",
-    description: "Coco gelado na hora, direto do gelo",
-    price: 8,
-    emoji: "🥥",
-    category: "bebida",
-    vendorId: "v5",
-  },
-  {
-    id: "2",
-    name: "Caipirinha de Limão",
-    description: "Cachaça, limão e açúcar na medida certa",
-    price: 18,
-    emoji: "🍹",
-    category: "bebida",
-    vendorId: "v4",
-  },
-  {
-    id: "3",
-    name: "Açaí na Tigela",
-    description: "Açaí batido com banana, granola e leite condensado",
-    price: 22,
-    emoji: "🍧",
-    category: "acai",
-    vendorId: "v3",
-  },
-  {
-    id: "4",
-    name: "Espetinho de Queijo Coalho",
-    description: "Queijo coalho grelhado na hora com melzinho",
-    price: 12,
-    emoji: "🧀",
-    category: "comida",
-    vendorId: "v2",
-  },
-  {
-    id: "5",
-    name: "Mate Gelado",
-    description: "Mate tradicional bem geladinho",
-    price: 7,
-    emoji: "🧉",
-    category: "bebida",
-    vendorId: "v1",
-  },
-  {
-    id: "6",
-    name: "Espeto de Camarão",
-    description: "Camarão temperado grelhado na brasa",
-    price: 25,
-    emoji: "🍤",
-    category: "comida",
-    vendorId: "v2",
-  },
-  {
-    id: "7",
-    name: "Óculos de Sol",
-    description: "Proteção UV, vários modelos disponíveis",
-    price: 35,
-    emoji: "🕶️",
-    category: "acessorio",
-    vendorId: "v4",
-  },
-  {
-    id: "8",
-    name: "Biscoito Globo",
-    description: "Pacotinho crocante, clássico de praia",
-    price: 6,
-    emoji: "🍘",
-    category: "comida",
-    vendorId: "v1",
-  },
-]
+const VENDOR_PRODUCT_COUNTS: Record<string, number> = {
+  v1: 2,
+  v2: 2,
+  v3: 1,
+  v4: 2,
+  v5: 1,
+}
 
 export function getVendorById(id: string): Vendor | undefined {
   return VENDORS.find((vendor) => vendor.id === id)
@@ -150,8 +83,8 @@ export function getBeachByName(name: string): Beach | undefined {
   return BEACHES.find((beach) => beach.name.toLowerCase() === normalized)
 }
 
-export function getProductsByVendorId(vendorId: string): Product[] {
-  return PRODUCTS.filter((product) => product.vendorId === vendorId)
+export function getVendorProductCount(vendorId: string): number {
+  return VENDOR_PRODUCT_COUNTS[vendorId] ?? 0
 }
 
 export function getOnlineSellersCount(productId: string): number {
