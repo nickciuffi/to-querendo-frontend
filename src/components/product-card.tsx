@@ -1,12 +1,15 @@
+import { useState } from "react"
 import { Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { WantItModal } from "@/components/want-it-modal"
 import { getOnlineSellersCount } from "@/lib/mock-data"
 import type { Product } from "@/lib/types"
 
 export function ProductCard({ product }: { product: Product }) {
   const onlineSellers = getOnlineSellersCount(product.id)
+  const [open, setOpen] = useState(false)
 
   return (
     <Card className="gap-1.5 rounded-xl border-2 border-[#FC800C] bg-[#0F172A] ring-0 py-0">
@@ -28,10 +31,12 @@ export function ProductCard({ product }: { product: Product }) {
         <Button
           size="sm"
           className="w-full rounded-full bg-[#FC800C] text-white hover:bg-[#FC800C]/90"
+          onClick={() => setOpen(true)}
         >
           Tô Querendo
         </Button>
       </CardContent>
+      <WantItModal product={product} open={open} onOpenChange={setOpen} />
     </Card>
   )
 }

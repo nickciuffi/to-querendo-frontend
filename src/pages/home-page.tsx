@@ -17,23 +17,12 @@ import { InstructionsSection } from "@/components/instructions-section"
 import { ProductCard } from "@/components/product-card"
 import { useAuth } from "@/hooks/use-auth"
 import { PRODUCTS } from "@/lib/mock-data"
-import type { ProductCategory } from "@/lib/types"
-
-const CATEGORIES: { id: ProductCategory | "todos"; label: string }[] = [
-  { id: "todos", label: "Todos" },
-  { id: "bebida", label: "Bebidas" },
-  { id: "comida", label: "Comidas" },
-  { id: "acai", label: "Açaí" },
-  { id: "acessorio", label: "Acessórios" },
-]
 
 export function HomePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [category, setCategory] = React.useState<ProductCategory | "todos">("todos")
 
-  const products =
-    category === "todos" ? PRODUCTS : PRODUCTS.filter((product) => product.category === category)
+  const products = PRODUCTS
 
   const firstName = user?.name.split(" ")[0] ?? "visitante"
   const initial = (user?.name.trim()[0] ?? "?").toUpperCase()

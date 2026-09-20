@@ -68,7 +68,7 @@ export const VENDORS: Vendor[] = [
 
 export const PRODUCTS: Product[] = [
   {
-    id: "p1",
+    id: "1",
     name: "Água de Coco",
     description: "Coco gelado na hora, direto do gelo",
     price: 8,
@@ -77,7 +77,7 @@ export const PRODUCTS: Product[] = [
     vendorId: "v5",
   },
   {
-    id: "p2",
+    id: "2",
     name: "Caipirinha de Limão",
     description: "Cachaça, limão e açúcar na medida certa",
     price: 18,
@@ -86,7 +86,7 @@ export const PRODUCTS: Product[] = [
     vendorId: "v4",
   },
   {
-    id: "p3",
+    id: "3",
     name: "Açaí na Tigela",
     description: "Açaí batido com banana, granola e leite condensado",
     price: 22,
@@ -95,7 +95,7 @@ export const PRODUCTS: Product[] = [
     vendorId: "v3",
   },
   {
-    id: "p4",
+    id: "4",
     name: "Espetinho de Queijo Coalho",
     description: "Queijo coalho grelhado na hora com melzinho",
     price: 12,
@@ -104,7 +104,7 @@ export const PRODUCTS: Product[] = [
     vendorId: "v2",
   },
   {
-    id: "p5",
+    id: "5",
     name: "Mate Gelado",
     description: "Mate tradicional bem geladinho",
     price: 7,
@@ -113,7 +113,7 @@ export const PRODUCTS: Product[] = [
     vendorId: "v1",
   },
   {
-    id: "p6",
+    id: "6",
     name: "Espeto de Camarão",
     description: "Camarão temperado grelhado na brasa",
     price: 25,
@@ -122,7 +122,7 @@ export const PRODUCTS: Product[] = [
     vendorId: "v2",
   },
   {
-    id: "p7",
+    id: "7",
     name: "Óculos de Sol",
     description: "Proteção UV, vários modelos disponíveis",
     price: 35,
@@ -131,7 +131,7 @@ export const PRODUCTS: Product[] = [
     vendorId: "v4",
   },
   {
-    id: "p8",
+    id: "8",
     name: "Biscoito Globo",
     description: "Pacotinho crocante, clássico de praia",
     price: 6,

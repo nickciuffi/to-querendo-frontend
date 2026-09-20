@@ -17,15 +17,13 @@ export interface Vendor {
   specialty: string
 }
 
-export type ProductCategory = "bebida" | "comida" | "acai" | "acessorio"
-
 export interface Product {
   id: string
   name: string
   description: string
   price: number
   emoji: string
-  category: ProductCategory
+  category: string
   vendorId: string
 }
 
