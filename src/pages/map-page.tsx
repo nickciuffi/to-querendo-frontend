@@ -19,6 +19,7 @@ export function MapPage() {
 
   const selectedVendor = VENDORS.find((vendor) => vendor.id === selectedVendorId) ?? null
   const productCount = selectedVendor ? getVendorProductCount(selectedVendor.id) : 0
+  console.log("Carregou página")
 
   return (
     <div className="flex h-full flex-col">

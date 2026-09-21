@@ -11,7 +11,7 @@ interface ProdutoBaseResponse {
   nome: string
   descricao: string
   urlFoto: string | null
-  precoMinimo: number
+  precoMinimo: string
   estaAtivo: boolean
 }
 
@@ -21,7 +21,7 @@ function mapProduto(body: ProdutoBaseResponse): Product {
     name: body.nome,
     description: body.descricao,
     photoUrl: body.urlFoto,
-    minPrice: body.precoMinimo,
+    minPrice: Number(body.precoMinimo),
     active: body.estaAtivo,
   }
 }
@@ -29,6 +29,13 @@ function mapProduto(body: ProdutoBaseResponse): Product {
 export async function getProdutosByPraia(idPraia: number): Promise<Product[]> {
   const { response } = await apiFetch<ApiEnvelope<ProdutoBaseResponse[]>>(
     `/produto-base?idPraia=${idPraia}`
+  )
+  return response.map(mapProduto)
+}
+
+export async function getProdutosBase(): Promise<Product[]> {
+  const { response } = await apiFetch<ApiEnvelope<ProdutoBaseResponse[]>>(
+    "/produto-base/todos"
   )
   return response.map(mapProduto)
 }

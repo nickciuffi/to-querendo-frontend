@@ -1,14 +1,14 @@
 import { Outlet } from "react-router-dom"
 
 import { BottomNav } from "@/components/layout/bottom-nav"
+import { Header } from "../header"
 
 export function AppLayout() {
   return (
-    <div className="flex h-dvh flex-col bg-background">
-      <div className="min-h-0 flex-1">
+    <div className="min-h-screen flex h-full flex-col justify-between overflow-y-auto bg-[#0F172A]">
+        <Header />
         <Outlet />
-      </div>
-      <BottomNav />
+        <BottomNav />
     </div>
   )
 }
