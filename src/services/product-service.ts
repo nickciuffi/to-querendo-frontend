@@ -39,3 +39,46 @@ export async function getProdutosBase(): Promise<Product[]> {
   )
   return response.map(mapProduto)
 }
+
+export async function deleteProdutoBase(id: string): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(`/produto-base/${id}`, {
+    method: "DELETE",
+  })
+}
+
+export interface CreateProdutoBasePayload {
+  nome: string
+  descricao: string
+  precoMinimo: number
+  urlFoto?: string
+}
+
+export async function createProdutoBase(payload: CreateProdutoBasePayload): Promise<Product> {
+  const { response } = await apiFetch<ApiEnvelope<ProdutoBaseResponse>>("/produto-base", {
+    method: "POST",
+    body: payload,
+  })
+  return mapProduto(response)
+}
+
+export interface UpdateProdutoBasePayload {
+  nome: string
+  descricao: string
+  precoMinimo: number
+  estaAtivo: boolean
+  urlFoto?: string
+}
+
+export async function updateProdutoBase(
+  id: string,
+  payload: UpdateProdutoBasePayload
+): Promise<Product> {
+  const { response } = await apiFetch<ApiEnvelope<ProdutoBaseResponse>>(
+    `/produto-base/${id}`,
+    {
+      method: "PUT",
+      body: payload,
+    }
+  )
+  return mapProduto(response)
+}
