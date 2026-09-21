@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MapboxMap } from "@/components/mapbox-map"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachByName, getProductsByVendorId, VENDORS } from "@/lib/mock-data"
+import { getBeachByName, getVendorProductCount, VENDORS } from "@/lib/mock-data"
 
 const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
 
@@ -18,7 +18,7 @@ export function MapPage() {
   const [selectedVendorId, setSelectedVendorId] = React.useState<string | null>(null)
 
   const selectedVendor = VENDORS.find((vendor) => vendor.id === selectedVendorId) ?? null
-  const products = selectedVendor ? getProductsByVendorId(selectedVendor.id) : []
+  const productCount = selectedVendor ? getVendorProductCount(selectedVendor.id) : 0
 
   return (
     <div className="flex h-full flex-col">
@@ -70,7 +70,7 @@ export function MapPage() {
                 {selectedVendor.rating.toFixed(1)}
               </span>
               <span>{selectedVendor.distanceMeters} m de você</span>
-              {products.length > 0 && <span>{products.length} produtos</span>}
+              {productCount > 0 && <span>{productCount} produtos</span>}
             </div>
 
             <Button className="w-full bg-brand-orange text-white hover:bg-brand-orange/90">

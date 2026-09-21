@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Users } from "lucide-react"
+import { ImageOff, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,8 +13,16 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <Card className="gap-1.5 rounded-xl border-2 border-[#FC800C] bg-[#0F172A] ring-0 py-0">
-      <div className="flex h-40 items-center justify-center rounded-lg bg-gradient-to-b from-[#FC800C]/25 to-[#FC800C]/5 text-3xl">
-        {product.emoji}
+      <div className="flex h-40 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-[#FC800C]/25 to-[#FC800C]/5">
+        {product.photoUrl ? (
+          <img
+            src={product.photoUrl}
+            alt={product.name}
+            className="size-full object-cover"
+          />
+        ) : (
+          <ImageOff className="size-8 text-white/40" />
+        )}
       </div>
 
       <CardContent className="flex flex-col gap-1.5 px-3 pb-3">

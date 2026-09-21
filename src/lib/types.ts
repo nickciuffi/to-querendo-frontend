@@ -21,10 +21,9 @@ export interface Product {
   id: string
   name: string
   description: string
-  price: number
-  emoji: string
-  category: string
-  vendorId: string
+  photoUrl: string | null
+  minPrice: number
+  active: boolean
 }
 
 export interface UserBeach {

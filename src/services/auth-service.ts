@@ -50,6 +50,11 @@ async function fetchMeusDados(session: AuthSession): Promise<AuthUser> {
   return mapUsuario(response)
 }
 
+export async function getCurrentUser(): Promise<AuthUser> {
+  const { response } = await apiFetch<ApiEnvelope<UsuarioMeusDadosResponse>>("/usuario/meus-dados")
+  return mapUsuario(response)
+}
+
 export async function login(email: string, senha: string): Promise<{ user: AuthUser; session: AuthSession }> {
   const { response } = await apiFetch<ApiEnvelope<LoginResponseBody>>("/auth/login", {
     method: "POST",

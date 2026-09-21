@@ -15,6 +15,7 @@ export interface AuthContextValue {
   hasRole: (role: Role) => boolean
   login: (payload: LoginPayload) => void
   logout: () => void
+  updateUser: (user: AuthUser) => void
 }
 
 export const AuthContext = React.createContext<AuthContextValue | null>(null)
