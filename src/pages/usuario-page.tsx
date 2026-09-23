@@ -1,11 +1,12 @@
 import * as React from "react"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, Plus } from "lucide-react"
 
 import { BeachSelect } from "@/components/beach-select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { CreateSellerProductModal } from "@/components/vendedor/create-seller-product-modal"
 import { SellerProductList } from "@/components/vendedor/seller-product-list"
 import { useAuth } from "@/hooks/use-auth"
 import { ApiError } from "@/services/http-client"
@@ -55,6 +56,9 @@ export function UsuarioPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const [saved, setSaved] = React.useState(false)
+
+  const [isCreateProductOpen, setIsCreateProductOpen] = React.useState(false)
+  const [productsReloadKey, setProductsReloadKey] = React.useState(0)
 
   if (!user) return null
 
@@ -237,11 +241,25 @@ export function UsuarioPage() {
     hasRole("ROLE_VENDEDOR") &&  (
         <div className="pb-8 flex-1 text-white w-full">
           <div className="mx-auto mt-4 w-full">
-            <h2 className="text-3xl font-bold leading-tight">Meus Produtos</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-3xl font-bold leading-tight">Meus Produtos</h2>
+              <Button
+                onClick={() => setIsCreateProductOpen(true)}
+                className="bg-[#FC800C] text-white hover:bg-[#FC800C]/90"
+              >
+                <Plus />
+                Adicionar
+              </Button>
+            </div>
             <p className="leading-snug text-white/55">Gerencie os seus produtos e serviços.</p>
             <div className="mt-6 rounded-xl border border-white/10 bg-[#1b2335] p-4">
-              <SellerProductList />
+              <SellerProductList reloadKey={productsReloadKey} />
             </div>
+            <CreateSellerProductModal
+              open={isCreateProductOpen}
+              onOpenChange={setIsCreateProductOpen}
+              onCreated={() => setProductsReloadKey((key) => key + 1)}
+            />
 
           </div>
         </div>   

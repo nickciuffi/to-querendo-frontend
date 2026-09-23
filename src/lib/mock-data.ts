@@ -86,8 +86,3 @@ export function getBeachByName(name: string): Beach | undefined {
 export function getVendorProductCount(vendorId: string): number {
   return VENDOR_PRODUCT_COUNTS[vendorId] ?? 0
 }
-
-export function getOnlineSellersCount(productId: string): number {
-  const seed = productId.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)
-  return (seed % 20) + 3
-}

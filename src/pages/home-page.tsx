@@ -18,7 +18,7 @@ import { ProductCard } from "@/components/product-card"
 import { useAuth } from "@/hooks/use-auth"
 import { getProdutosByPraia } from "@/services/product-service"
 import type { Product } from "@/lib/types"
-import { Header } from "@/components/header"
+import { Header } from "@/components/layout/header"
 
 export function HomePage() {
   const { user, logout } = useAuth()

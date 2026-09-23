@@ -57,6 +57,7 @@ export interface SellerProduct {
   description: string
   baseProductId: number
   baseProductName: string
+  photoUrl: string | null
   price: number
   active: boolean
   baseProductActive: boolean
