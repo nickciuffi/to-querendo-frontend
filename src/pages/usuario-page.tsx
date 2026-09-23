@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { SellerProductList } from "@/components/vendedor/seller-product-list"
 import { useAuth } from "@/hooks/use-auth"
 import { ApiError } from "@/services/http-client"
 import { getCurrentUser, updateCurrentUser, type UpdateCurrentUserPayload } from "@/services/auth-service"
@@ -107,13 +108,13 @@ export function UsuarioPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-between px-4 lg:px-30 lg:flex-row lg:gap-20">
+    <div className="flex flex-1 flex-col items-start justify-between px-4 lg:px-30 lg:flex-row lg:gap-20">
     <div className="pb-8 flex-1 lg:max-w-[70%] mx-auto text-white w-full">
       <div className="mx-auto mt-6 w-full">
         <h2 className="text-3xl font-bold leading-tight">Meus dados</h2>
         <p className="leading-snug text-white/55">Atualize suas informações pessoais e sua praia atual.</p>
 
-        <div className="mt-6 flex items-center gap-4 rounded-xl border border-white/10 bg-[#1b2335] p-4">
+        {/* <div className="mt-6 flex items-center gap-4 rounded-xl border border-white/10 bg-[#1b2335] p-4">
           <Avatar className="size-16">
             {photoUrl.trim() && <AvatarImage src={photoUrl.trim()} alt={name} />}
             <AvatarFallback className="bg-[#FC800C]/15 text-xl text-[#FC800C]">{initial}</AvatarFallback>
@@ -122,7 +123,7 @@ export function UsuarioPage() {
             <p className="truncate font-semibold">{name.trim() || user.name}</p>
             <p className="truncate text-sm text-white/55">{user.email}</p>
           </div>
-        </div>
+        </div> */}
 
         <form
           onSubmit={handleSubmit}
@@ -229,9 +230,23 @@ export function UsuarioPage() {
           >
             {isSubmitting ? "Salvando..." : "Salvar alterações"}
           </Button>
-        </form>
+        </form>  
       </div>
     </div>
+     { 
+    hasRole("ROLE_VENDEDOR") &&  (
+        <div className="pb-8 flex-1 text-white w-full">
+          <div className="mx-auto mt-4 w-full">
+            <h2 className="text-3xl font-bold leading-tight">Meus Produtos</h2>
+            <p className="leading-snug text-white/55">Gerencie os seus produtos e serviços.</p>
+            <div className="mt-6 rounded-xl border border-white/10 bg-[#1b2335] p-4">
+              <SellerProductList />
+            </div>
+
+          </div>
+        </div>   
+      )
+    }
    
     </div>
   )
