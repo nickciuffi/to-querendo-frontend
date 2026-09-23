@@ -22,14 +22,18 @@ export function MapPage() {
   console.log("Carregou página")
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-[4]">
-        <MapboxMap
-          beach={beach}
-          vendors={VENDORS}
-          selectedVendorId={selectedVendorId}
-          onSelectVendor={setSelectedVendorId}
-        />
+    <div className="flex flex-1 flex-col">
+      {/* O layout só tem altura mínima, então o mapa fica em posição absoluta para ter
+          uma altura definida — o Mapbox não desenha em container com altura 0. */}
+      <div className="relative min-h-0 flex-[4]">
+        <div className="absolute inset-0">
+          <MapboxMap
+            beach={beach}
+            vendors={VENDORS}
+            selectedVendorId={selectedVendorId}
+            onSelectVendor={setSelectedVendorId}
+          />
+        </div>
       </div>
 
       <div className="flex-[1] min-h-[7.5rem] overflow-y-auto border-t border-border bg-card px-4 py-3">

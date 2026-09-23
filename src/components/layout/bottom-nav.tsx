@@ -20,7 +20,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="relative mt-[100%]shrink-0 border-t border-white/10 bg-[#1b2335] backdrop-blur"
+      className="relative shrink-0 border-t border-white/10 bg-[#1b2335] backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-between px-2">

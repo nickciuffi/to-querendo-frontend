@@ -5,9 +5,11 @@ import { Header } from "../header"
 
 export function AppLayout() {
   return (
-    <div className="min-h-screen flex h-full flex-col justify-between overflow-y-auto bg-[#0F172A]">
+    <div className="flex min-h-dvh flex-col bg-[#0F172A]">
         <Header />
-        <Outlet />
+        <main className="flex flex-1 flex-col">
+          <Outlet />
+        </main>
         <BottomNav />
     </div>
   )
