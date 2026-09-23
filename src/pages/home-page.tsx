@@ -18,6 +18,7 @@ import { ProductCard } from "@/components/product-card"
 import { useAuth } from "@/hooks/use-auth"
 import { getProdutosByPraia } from "@/services/product-service"
 import type { Product } from "@/lib/types"
+import { Header } from "@/components/header"
 
 export function HomePage() {
   const { user, logout } = useAuth()
@@ -54,65 +55,11 @@ export function HomePage() {
     }
   }, [beachId])
 
-  const firstName = user?.name.split(" ")[0] ?? "visitante"
-  const initial = (user?.name.trim()[0] ?? "?").toUpperCase()
-
-  function handleLogout() {
-    logout()
-    navigate("/login", { replace: true })
-  }
-
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[#0F172A]">
-      <div className="sticky top-0 z-10 backdrop-blur">
-        <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4 bg-[#1b2335]">
-          <div className="min-w-0">
-            <p className="text-xs text-white/70">Olá, {firstName} 👋</p>
-            <BeachSelect />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-              <Avatar className="cursor-pointer">
-                <AvatarFallback className="bg-brand-orange/15 text-brand-orange">
-                  {initial}
-                </AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>
-                  <p className="truncate font-medium text-foreground">{user?.name}</p>
-                  <p className="truncate text-xs font-normal text-muted-foreground">{user?.email}</p>
-                </DropdownMenuLabel>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-                <LogOut />
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
-
-        {/* <div className="flex gap-2 overflow-x-auto px-4 py-3">
-          {CATEGORIES.map((item) => (
-            <Badge
-              key={item.id}
-              onClick={() => setCategory(item.id)}
-              variant={category === item.id ? "default" : "outline"}
-              className={
-                category === item.id
-                  ? "h-7 shrink-0 cursor-pointer bg-brand-orange px-3 text-white"
-                  : "h-7 shrink-0 cursor-pointer border-white/20 bg-white/10 px-3 text-white/80"
-              }
-            >
-              {item.label}
-            </Badge>
-          ))}
-        </div> */}
-      </div>
-      <div className="px-4 pt-3 text-white lg:px-30 mt-10">
-          <h2 className="text-3xl font-bold leading-tight">O que você está querendo hoje?</h2>
+    <div>
+      <div className="px-4 pt-1 text-white lg:px-30 mt-6">
+          <BeachSelect />
+          <h2 className="text-3xl mt-4 font-bold leading-tight">O que você está querendo hoje?</h2>
           <p className=" leading-snug text-white/55">
             Avise os vendedores da praia e receba atendimento mais rápido direto no seu guarda-sol
           </p>

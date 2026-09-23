@@ -41,7 +41,7 @@ export async function apiFetch<T>(path: string, options: ApiRequestOptions = {})
   })
 
   if (!response.ok) {
-    let message = response.statusText
+    let message = response.statusText || `Erro ${response.status}`
     try {
       const data = (await response.clone().json()) as { messages?: string[] }
       if (data.messages && data.messages.length > 0) {

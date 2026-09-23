@@ -28,6 +28,7 @@ export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: 
   }, [onSelectVendor])
 
   React.useEffect(() => {
+    console.log("Carregou mapa")
     if (!MAPBOX_TOKEN || !containerRef.current) return
 
     mapboxgl.accessToken = MAPBOX_TOKEN

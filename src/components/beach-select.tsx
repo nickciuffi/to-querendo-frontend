@@ -47,7 +47,7 @@ export function BeachSelect() {
       onValueChange={handleChange}
       disabled={isChanging}
     >
-      <SelectTrigger className="mt-1 h-9 max-w-full gap-1.5 border-none bg-white/10 px-2.5 text-sm font-medium text-white hover:bg-white/15">
+      <SelectTrigger className="h-9 max-w-full gap-1.5 border-none bg-white/10 px-2.5 text-sm font-medium text-white hover:bg-white/15">
         <MapPin className="size-4 shrink-0 text-white" />
         <SelectValue placeholder="Escolha uma praia" className="truncate">
           {(value: number | null) => {

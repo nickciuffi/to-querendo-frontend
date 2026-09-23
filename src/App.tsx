@@ -30,10 +30,10 @@ function App() {
           <Route path="vendedor" element={<ProtectedRoute role="ROLE_VENDEDOR" />}>
             <Route index element={<VendedorPage />} />
           </Route>
-        </Route>
 
-        <Route path="admin" element={<ProtectedRoute role="ROLE_ADMIN" />}>
-          <Route index element={<AdminPage />} />
+          <Route path="admin" element={<ProtectedRoute role="ROLE_ADMIN" />}>
+            <Route index element={<AdminPage />} />
+          </Route>
         </Route>
 
       </Route>
