@@ -14,7 +14,7 @@ export function BottomNav() {
       : []),
     { to: "/mapa", label: "Mapa", icon: MapPin, end: false },
     { to: "#", label: "Pedidos", icon: ShoppingBag, disabled: true },
-    { to: "#", label: "Perfil", icon: UserRound, disabled: true },
+    { to: "/usuario", label: "Perfil", icon: UserRound, end: false },
     ...(hasRole("ROLE_ADMIN") ? [{ to: "/admin", label: "Admin", icon: ShieldCheck, end: false }] : []),
   ]
 

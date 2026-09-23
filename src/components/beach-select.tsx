@@ -9,14 +9,30 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAuth } from "@/hooks/use-auth"
+import { cn } from "@/lib/utils"
 import { getCurrentUser } from "@/services/auth-service"
 import { getPraias, updateUserBeach } from "@/services/beach-service"
 import type { UserBeach } from "@/lib/types"
 
-export function BeachSelect() {
+interface BeachSelectProps {
+  /**
+   * Modo controlado: quando `onValueChange` é passado, a troca de praia não é salva
+   * na API — quem usa o componente decide quando persistir (ex.: formulário de perfil).
+   */
+  value?: number | null
+  onValueChange?: (idPraia: number) => void
+  id?: string
+  className?: string
+  disabled?: boolean
+}
+
+export function BeachSelect({ value, onValueChange, id, className, disabled }: BeachSelectProps = {}) {
   const { user, updateUser } = useAuth()
   const [beaches, setBeaches] = useState<UserBeach[]>([])
   const [isChanging, setIsChanging] = useState(false)
+
+  const isControlled = onValueChange !== undefined
+  const selectedId = isControlled ? (value ?? null) : (user?.beach?.id ?? null)
 
   useEffect(() => {
     getPraias()
@@ -25,7 +41,12 @@ export function BeachSelect() {
   }, [])
 
   async function handleChange(idPraia: number | null) {
-    if (!idPraia || idPraia === user?.beach?.id) return
+    if (!idPraia || idPraia === selectedId) return
+
+    if (isControlled) {
+      onValueChange(idPraia)
+      return
+    }
 
     setIsChanging(true)
     try {
@@ -43,11 +64,17 @@ export function BeachSelect() {
 
   return (
     <Select
-      value={user.beach?.id ?? null}
+      value={selectedId}
       onValueChange={handleChange}
-      disabled={isChanging}
+      disabled={disabled || isChanging}
     >
-      <SelectTrigger className="h-9 max-w-full gap-1.5 border-none bg-white/10 px-2.5 text-sm font-medium text-white hover:bg-white/15">
+      <SelectTrigger
+        id={id}
+        className={cn(
+          "h-9 max-w-full gap-1.5 border-none bg-white/10 px-2.5 text-sm font-medium text-white hover:bg-white/15",
+          className
+        )}
+      >
         <MapPin className="size-4 shrink-0 text-white" />
         <SelectValue placeholder="Escolha uma praia" className="truncate">
           {(value: number | null) => {
