@@ -7,7 +7,7 @@ import { HomePage } from "@/pages/home-page"
 import { CadastroPage } from "@/pages/cadastro-page"
 import { LoginPage } from "@/pages/login-page"
 import { AdminPage } from "@/pages/admin/admin-page"
-import { VendedorPage } from "@/pages/vendedor/vendedor-page"
+import { UsuarioPage } from "@/pages/usuario-page"
 
 const MapPage = lazy(() => import("@/pages/map-page").then((m) => ({ default: m.MapPage })))
 
@@ -27,9 +27,7 @@ function App() {
               </Suspense>
             }
           />
-          <Route path="vendedor" element={<ProtectedRoute role="ROLE_VENDEDOR" />}>
-            <Route index element={<VendedorPage />} />
-          </Route>
+          <Route path="usuario" element={<UsuarioPage />} />
 
           <Route path="admin" element={<ProtectedRoute role="ROLE_ADMIN" />}>
             <Route index element={<AdminPage />} />

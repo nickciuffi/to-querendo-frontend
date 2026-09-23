@@ -50,3 +50,16 @@ export interface AuthUser {
   beach: UserBeach | null
   category: UserCategory | null
 }
+
+export interface SellerProduct {
+  id: number
+  name: string
+  description: string
+  baseProductId: number
+  baseProductName: string
+  photoUrl: string | null
+  price: number
+  active: boolean
+  baseProductActive: boolean
+  createdAt: string
+}

@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -37,6 +37,10 @@ export function Header() {
                       <p className="truncate text-xs font-normal text-muted-foreground">{user?.email}</p>
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/usuario")}>
+                    Perfil
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem variant="destructive" onClick={handleLogout}>
                     <LogOut />

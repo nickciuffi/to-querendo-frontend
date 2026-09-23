@@ -33,6 +33,13 @@ export async function getProdutosByPraia(idPraia: number): Promise<Product[]> {
   return response.map(mapProduto)
 }
 
+export async function getProdutosBaseAtivos(): Promise<Product[]> {
+  const { response } = await apiFetch<ApiEnvelope<ProdutoBaseResponse[]>>(
+    "/produto-base"
+  )
+  return response.map(mapProduto)
+}
+
 export async function getProdutosBase(): Promise<Product[]> {
   const { response } = await apiFetch<ApiEnvelope<ProdutoBaseResponse[]>>(
     "/produto-base/todos"

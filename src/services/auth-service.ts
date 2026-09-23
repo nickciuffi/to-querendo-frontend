@@ -75,3 +75,22 @@ export async function register(nome: string, email: string, senha: string): Prom
     auth: false,
   })
 }
+
+export interface UpdateCurrentUserPayload {
+  nome?: string
+  telefone?: string
+  cpf?: string
+  urlFoto?: string
+  idPraia?: number
+}
+
+/**
+ * Atualiza os dados do usuário autenticado. A API ignora campos ausentes/`null`,
+ * então só os campos preenchidos devem ser enviados.
+ */
+export async function updateCurrentUser(payload: UpdateCurrentUserPayload): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>("/usuario", {
+    method: "PUT",
+    body: payload,
+  })
+}

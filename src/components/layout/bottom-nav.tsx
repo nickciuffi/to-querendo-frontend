@@ -9,18 +9,15 @@ export function BottomNav() {
 
   const navItems = [
     { to: "/", label: "Início", icon: Home, end: true },
-     ...(hasRole("ROLE_VENDEDOR")
-      ? [{ to: "/vendedor", label: "Vendedor", icon: Store, end: false }]
-      : []),
     { to: "/mapa", label: "Mapa", icon: MapPin, end: false },
     { to: "#", label: "Pedidos", icon: ShoppingBag, disabled: true },
-    { to: "#", label: "Perfil", icon: UserRound, disabled: true },
+    { to: "/usuario", label: "Perfil", icon: UserRound, end: false },
     ...(hasRole("ROLE_ADMIN") ? [{ to: "/admin", label: "Admin", icon: ShieldCheck, end: false }] : []),
   ]
 
   return (
     <nav
-      className="relative shrink-0 border-t border-white/10 bg-[#1b2335] backdrop-blur"
+      className="sticky bottom-0 shrink-0 border-t border-white/10 bg-[#1b2335] backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-between px-2">

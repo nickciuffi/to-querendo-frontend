@@ -4,11 +4,9 @@ import { ImageOff, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { WantItModal } from "@/components/want-it-modal"
-import { getOnlineSellersCount } from "@/lib/mock-data"
 import type { Product } from "@/lib/types"
 
 export function ProductCard({ product }: { product: Product }) {
-  const onlineSellers = getOnlineSellersCount(product.id)
   const [open, setOpen] = useState(false)
 
   return (
@@ -31,8 +29,8 @@ export function ProductCard({ product }: { product: Product }) {
             {product.name}
           </p>
           <div className="flex items-center gap-1 text-[11px] text-white/60">
-            <Users className="size-3" />
-            <span className="truncate">{onlineSellers} vendedores online</span>
+           
+            <span className="truncate mb-2 mt-1">{product.description}</span>
           </div>
         </div>
 

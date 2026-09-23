@@ -12,14 +12,12 @@ const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Jan
 
 export function MapPage() {
   const { user } = useAuth()
-  // A API ainda não retorna coordenadas da praia atual, só o nome — tentamos casar
-  // com o catálogo mockado e caímos no fallback quando não há correspondência.
+  
   const beach = (user?.beach ? getBeachByName(user.beach.name) : undefined) ?? FALLBACK_BEACH
   const [selectedVendorId, setSelectedVendorId] = React.useState<string | null>(null)
 
   const selectedVendor = VENDORS.find((vendor) => vendor.id === selectedVendorId) ?? null
   const productCount = selectedVendor ? getVendorProductCount(selectedVendor.id) : 0
-  console.log("Carregou página")
 
   return (
     <div className="flex flex-1 flex-col">
