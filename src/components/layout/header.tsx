@@ -38,11 +38,11 @@ export function Header() {
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/usuario")}>
+                  <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/usuario")}>
                     Perfil
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                  <DropdownMenuItem className="cursor-pointer" variant="destructive" onClick={handleLogout}>
                     <LogOut />
                     Sair
                   </DropdownMenuItem>

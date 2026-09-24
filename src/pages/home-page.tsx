@@ -19,6 +19,8 @@ import { useAuth } from "@/hooks/use-auth"
 import { getProdutosByPraia } from "@/services/product-service"
 import type { Product } from "@/lib/types"
 import { Header } from "@/components/layout/header"
+import { BecomeSellerFloatingButton } from "@/components/vendedor/become-seller-floating-button"
+import { SellerOnlineFloatingButton } from "@/components/vendedor/seller-online-floating-button"
 
 export function HomePage() {
   const { user, logout } = useAuth()
@@ -89,6 +91,8 @@ export function HomePage() {
       </section>
 
       <InstructionsSection />
+      <BecomeSellerFloatingButton />
+      <SellerOnlineFloatingButton />
     </div>
   )
 }

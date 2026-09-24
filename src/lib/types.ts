@@ -43,12 +43,13 @@ export type Role = "ROLE_TURISTA" | "ROLE_VENDEDOR" | "ROLE_ADMIN"
 export interface AuthUser {
   name: string
   email: string
-  active: boolean
   phone: string | null
   cpf: string | null
   photoUrl: string | null
   beach: UserBeach | null
   category: UserCategory | null
+  description: string
+  online: boolean
 }
 
 export interface SellerProduct {

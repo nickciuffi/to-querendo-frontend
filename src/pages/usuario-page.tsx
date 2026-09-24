@@ -2,10 +2,17 @@ import * as React from "react"
 import { CheckCircle2, Plus } from "lucide-react"
 
 import { BeachSelect } from "@/components/beach-select"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { BecomeSellerCard } from "@/components/vendedor/become-seller-card"
 import { CreateSellerProductModal } from "@/components/vendedor/create-seller-product-modal"
 import { SellerProductList } from "@/components/vendedor/seller-product-list"
 import { useAuth } from "@/hooks/use-auth"
@@ -43,12 +50,16 @@ export function UsuarioPage() {
   const cpfId = React.useId()
   const photoUrlId = React.useId()
   const beachId = React.useId()
+  const onlineId = React.useId()
+  const sellerDescriptionId = React.useId()
 
   const [name, setName] = React.useState(user?.name ?? "")
   const [phone, setPhone] = React.useState(formatPhone(user?.phone ?? ""))
   const [cpf, setCpf] = React.useState(formatCpf(user?.cpf ?? ""))
   const [photoUrl, setPhotoUrl] = React.useState(user?.photoUrl ?? "")
   const [idPraia, setIdPraia] = React.useState<number | null>(user?.beach?.id ?? null)
+  const [online, setOnline] = React.useState(user?.online ?? false)
+  const [sellerDescription, setSellerDescription] = React.useState(user?.description ?? "")
 
   const [nameError, setNameError] = React.useState(false)
   const [cpfError, setCpfError] = React.useState(false)
@@ -62,9 +73,12 @@ export function UsuarioPage() {
 
   if (!user) return null
 
-  const initial = (name.trim()[0] ?? user.name.trim()[0] ?? "?").toUpperCase()
+  const isSeller = hasRole("ROLE_VENDEDOR")
 
   const isDirty =
+    (isSeller &&
+      (online !== (user.online ?? false) ||
+        sellerDescription.trim() !== (user.description ?? ""))) ||
     name.trim() !== user.name ||
     onlyDigits(phone) !== (user.phone ?? "") ||
     onlyDigits(cpf) !== (user.cpf ?? "") ||
@@ -95,6 +109,11 @@ export function UsuarioPage() {
     if (cpfDigits) payload.cpf = cpfDigits
     if (photoUrl.trim()) payload.urlFoto = photoUrl.trim()
     if (idPraia) payload.idPraia = idPraia
+    if (isSeller) {
+      payload.online = online
+      // Enviamos mesmo vazia, para o vendedor conseguir apagar a descrição.
+      payload.descricao = sellerDescription.trim()
+    }
 
     setIsSubmitting(true)
     setSubmitError(null)
@@ -118,20 +137,9 @@ export function UsuarioPage() {
         <h2 className="text-3xl font-bold leading-tight">Meus dados</h2>
         <p className="leading-snug text-white/55">Atualize suas informações pessoais e sua praia atual.</p>
 
-        {/* <div className="mt-6 flex items-center gap-4 rounded-xl border border-white/10 bg-[#1b2335] p-4">
-          <Avatar className="size-16">
-            {photoUrl.trim() && <AvatarImage src={photoUrl.trim()} alt={name} />}
-            <AvatarFallback className="bg-[#FC800C]/15 text-xl text-[#FC800C]">{initial}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="truncate font-semibold">{name.trim() || user.name}</p>
-            <p className="truncate text-sm text-white/55">{user.email}</p>
-          </div>
-        </div> */}
-
         <form
           onSubmit={handleSubmit}
-          className="mt-4 flex flex-col gap-5 rounded-xl border border-white/10 bg-[#1b2335] p-4"
+          className="mt-4 flex flex-col gap-4 rounded-xl border border-white/10 bg-[#1b2335] p-4"
           noValidate
         >
           <div className="flex flex-col gap-1.5">
@@ -219,6 +227,60 @@ export function UsuarioPage() {
             />
           </div>
 
+          {isSeller && (
+            <div className="flex flex-col gap-4 border-t border-white/10 pt-2">
+              <p className="text-sm font-semibold text-white">Dados de vendedor</p>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor={onlineId} className="text-white/80">Está online</Label>
+                <Select
+                  value={online ? "true" : "false"}
+                  onValueChange={(value) => {
+                    setOnline(value === "true")
+                    setSaved(false)
+                  }}
+                >
+                  <SelectTrigger
+                    id={onlineId}
+                    className="h-10 w-full border-white/15 bg-white/5 text-white hover:bg-white/10 sm:w-48"
+                  >
+                    <SelectValue>
+                      {(value: string | null) => (
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`size-2 rounded-full ${value === "true" ? "bg-emerald-400" : "bg-white/40"}`}
+                          />
+                          {value === "true" ? "Sim" : "Não"}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor={sellerDescriptionId} className="text-white/80">
+                  Descrição do seu negócio
+                </Label>
+                <Input
+                  id={sellerDescriptionId}
+                  value={sellerDescription}
+                  onChange={(event) => {
+                    setSellerDescription(event.target.value)
+                    setSaved(false)
+                  }}
+                  maxLength={500}
+                  placeholder="Ex: Bebidas geladinhas e petiscos na areia"
+                  className={inputClassName}
+                />
+              </div>
+            </div>
+          )}
+
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
           {saved && (
             <p className="flex items-center gap-1.5 text-sm text-emerald-400">
@@ -240,7 +302,7 @@ export function UsuarioPage() {
      { 
     hasRole("ROLE_VENDEDOR") &&  (
         <div className="pb-8 flex-1 text-white w-full">
-          <div className="mx-auto mt-4 w-full">
+          <div className="mx-auto mt-6 w-full">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-3xl font-bold leading-tight">Meus Produtos</h2>
               <Button
@@ -262,10 +324,21 @@ export function UsuarioPage() {
             />
 
           </div>
-        </div>   
+        </div>
       )
     }
-   
+    {!hasRole("ROLE_VENDEDOR") && (
+      <div className="pb-8 flex-1 text-white w-full">
+        <div className="mx-auto mt-6 w-full">
+          <h2 className="text-3xl font-bold leading-tight">Seja um vendedor</h2>
+          <p className="leading-snug text-white/55">Comece a vender seus produtos na praia.</p>
+          <div className="mt-4">
+            <BecomeSellerCard />
+          </div>
+        </div>
+      </div>
+    )}
+
     </div>
   )
 }
