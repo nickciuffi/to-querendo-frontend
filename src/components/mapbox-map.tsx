@@ -2,9 +2,12 @@ import * as React from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 
+import { useAuth } from "@/hooks/use-auth"
 import type { Beach, Vendor } from "@/lib/types"
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
+const DEFAULT_STYLE = "mapbox://styles/mapbox/streets-v12"
+const OFFLINE_SELLER_STYLE = "mapbox://styles/mapbox/light-v11"
 
 interface MapboxMapProps {
   beach: Beach
@@ -22,6 +25,12 @@ export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: 
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [map, setMap] = React.useState<mapboxgl.Map | null>(null)
   const onSelectVendorRef = React.useRef(onSelectVendor)
+  const { user, hasRole } = useAuth()
+
+  // Vendedor offline vê o mapa em estilo claro; demais usuários mantêm o padrão.
+  const isOfflineSeller = !!user && hasRole("ROLE_VENDEDOR") && !user.online
+  const mapStyle = isOfflineSeller ? OFFLINE_SELLER_STYLE : DEFAULT_STYLE
+  const appliedStyleRef = React.useRef(mapStyle)
 
   React.useEffect(() => {
     onSelectVendorRef.current = onSelectVendor
@@ -33,12 +42,13 @@ export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: 
     mapboxgl.accessToken = MAPBOX_TOKEN
     const instance = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: mapStyle,
       center: beach.center,
       zoom: 15.5,
       attributionControl: false,
     })
     instance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right")
+    appliedStyleRef.current = mapStyle
     setMap(instance)
 
     return () => {
@@ -47,6 +57,12 @@ export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [beach.id])
+
+  React.useEffect(() => {
+    if (!map || appliedStyleRef.current === mapStyle) return
+    map.setStyle(mapStyle)
+    appliedStyleRef.current = mapStyle
+  }, [map, mapStyle])
 
   React.useEffect(() => {
     if (!map) return
