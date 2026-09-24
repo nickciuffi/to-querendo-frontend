@@ -1,5 +1,7 @@
 import { apiFetch } from "@/services/http-client"
 import { toAuthSession, type AuthSession, type LoginResponseBody } from "@/lib/auth-session"
+import { readAuth } from "@/lib/auth-storage"
+import { getTokenExpiration } from "@/lib/jwt"
 import type { AuthUser } from "@/lib/types"
 
 interface ApiEnvelope<T> {
@@ -13,16 +15,16 @@ interface UsuarioMeusDadosResponse {
   telefone: string | null
   cpf: string | null
   urlFoto: string | null
-  contaAtiva: boolean
   praiaAtual: { id: number; nome: string; cidade: string; estado: string } | null
   categoria: { id: number; descricao: string } | null
+  descricao: string,
+  online: boolean,
 }
 
 function mapUsuario(body: UsuarioMeusDadosResponse): AuthUser {
   return {
     name: body.nome,
     email: body.email,
-    active: body.contaAtiva,
     phone: body.telefone,
     cpf: body.cpf,
     photoUrl: body.urlFoto,
@@ -37,6 +39,8 @@ function mapUsuario(body: UsuarioMeusDadosResponse): AuthUser {
     category: body.categoria
       ? { id: body.categoria.id, description: body.categoria.descricao }
       : null,
+    description: body.descricao,
+    online: body.online,
   }
 }
 
@@ -69,7 +73,7 @@ export async function login(email: string, senha: string): Promise<{ user: AuthU
 }
 
 export async function register(nome: string, email: string, senha: string): Promise<void> {
-  await apiFetch<ApiEnvelope<unknown>>("/usuario", {
+  await apiFetch<ApiEnvelope<unknown>>("/usuario/cadastrar", {
     method: "POST",
     body: { nome, email, senha },
     auth: false,
@@ -82,6 +86,9 @@ export interface UpdateCurrentUserPayload {
   cpf?: string
   urlFoto?: string
   idPraia?: number
+  /** Campos de vendedor: só são alterados quando enviados. */
+  descricao?: string
+  online?: boolean
 }
 
 /**
@@ -93,4 +100,32 @@ export async function updateCurrentUser(payload: UpdateCurrentUserPayload): Prom
     method: "PUT",
     body: payload,
   })
+}
+
+interface UpgradeVendedorResponse extends UsuarioMeusDadosResponse {
+  /** Token novo, já com a role de vendedor. */
+  token: string
+}
+
+/**
+ * Promove o usuário logado a vendedor (`POST /vendedor`). A API devolve os dados do usuário
+ * e um token novo com `ROLE_VENDEDOR`, que deve substituir a sessão atual.
+ */
+export async function upgradeToVendedor(
+  descricao?: string
+): Promise<{ user: AuthUser; session: AuthSession }> {
+  const { response } = await apiFetch<ApiEnvelope<UpgradeVendedorResponse>>("/vendedor", {
+    method: "POST",
+    body: { descricao },
+  })
+
+  const currentSession = readAuth()?.session
+  const session: AuthSession = {
+    token: response.token,
+    tokenType: currentSession?.tokenType ?? "Bearer",
+    // A resposta não traz a validade, então usamos o `exp` do próprio JWT.
+    expiresAt: getTokenExpiration(response.token) ?? currentSession?.expiresAt ?? Date.now() + 60 * 60 * 1000,
+  }
+
+  return { user: mapUsuario(response), session }
 }

@@ -26,6 +26,12 @@ function decodeJwtPayload(token: string): DecodedJwtPayload | null {
   }
 }
 
+/** Momento de expiração do token (em ms, como `Date.now()`), lido do claim `exp`. */
+export function getTokenExpiration(token: string): number | null {
+  const payload = decodeJwtPayload(token)
+  return typeof payload?.exp === "number" ? payload.exp * 1000 : null
+}
+
 export function getRolesFromToken(token: string | null): Role[] {
   if (!token) return []
 
