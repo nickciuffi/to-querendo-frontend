@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { MapboxMap } from "@/components/mapbox-map"
 import { useAuth } from "@/hooks/use-auth"
 import { getBeachByName } from "@/lib/mock-data"
-import type { MapVendor } from "@/lib/types"
+import { ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
+import type { MapVendor, Product } from "@/lib/types"
+import { getProdutosByPraia } from "@/services/product-service"
 import { getVendedoresDaPraia } from "@/services/vendor-location-service"
 
 const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
@@ -21,22 +23,54 @@ export function MapPage() {
 
   const [loadedVendors, setVendors] = React.useState<MapVendor[]>([])
   const vendors = beachId ? loadedVendors : []
+  const [products, setProducts] = React.useState<Product[] | null>(null)
+  const [productFilter, setProductFilter] = React.useState(ALL_PRODUCTS)
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [selectedVendorId, setSelectedVendorId] = React.useState<number | null>(null)
 
+  // Produtos da praia: alimentam as opções do filtro.
   React.useEffect(() => {
     if (!beachId) return
 
     let cancelled = false
 
-    async function loadVendors(id: number) {
+    async function loadProducts(id: number) {
+      setProducts(null)
+      setProductFilter(ALL_PRODUCTS)
+      setError(null)
+      try {
+        const result = await getProdutosByPraia(id)
+        if (!cancelled) setProducts(result)
+      } catch {
+        if (!cancelled) setError("Não foi possível carregar os produtos dessa praia.")
+      }
+    }
+
+    loadProducts(beachId)
+
+    return () => {
+      cancelled = true
+    }
+  }, [beachId])
+
+  // Vendedores: o valor do filtro vai no `idProdutoBase` da rota (ou todos os produtos da praia).
+  React.useEffect(() => {
+    if (!beachId || !products) return
+
+    let cancelled = false
+
+    async function loadVendors(id: number, productList: Product[]) {
       setIsLoading(true)
       setError(null)
       setVendors([])
       setSelectedVendorId(null)
+      const ids =
+        productFilter === ALL_PRODUCTS
+          ? productList.map((product) => Number(product.id))
+          : [Number(productFilter)]
       try {
-        const result = await getVendedoresDaPraia(id)
+        const result = await getVendedoresDaPraia(id, ids)
         if (!cancelled) setVendors(result)
       } catch {
         if (!cancelled) setError("Não foi possível carregar os vendedores dessa praia.")
@@ -45,12 +79,12 @@ export function MapPage() {
       }
     }
 
-    loadVendors(beachId)
+    loadVendors(beachId, products)
 
     return () => {
       cancelled = true
     }
-  }, [beachId])
+  }, [beachId, products, productFilter])
 
   const selectedVendor = vendors.find((vendor) => vendor.id === selectedVendorId) ?? null
   const availableCount = vendors.filter((vendor) => vendor.available).length
@@ -66,6 +100,17 @@ export function MapPage() {
             vendors={vendors}
             selectedVendorId={selectedVendorId}
             onSelectVendor={setSelectedVendorId}
+            centerKey={`${beachId}:${productFilter}`}
+          />
+        </div>
+        {/* Fica dentro do container do mapa (abaixo do header) e deixa livre o canto direito,
+            onde ficam os controles de zoom do Mapbox. */}
+        <div className="absolute left-3 top-3 z-10 w-[calc(100%-4.5rem)] max-w-xs">
+          <ProductFilterSelect
+            products={products ?? []}
+            value={productFilter}
+            onValueChange={setProductFilter}
+            disabled={!beachId || products === null}
           />
         </div>
       </div>

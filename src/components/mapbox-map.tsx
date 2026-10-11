@@ -15,6 +15,8 @@ interface MapboxMapProps {
   vendors: MapVendor[]
   selectedVendorId: number | null
   onSelectVendor: (vendorId: number) => void
+  /** Quando muda, o mapa volta a centralizar no primeiro vendedor da próxima lista carregada. */
+  centerKey: string
 }
 
 /** Cor do anel do marcador: azul = selecionado, verde = disponível, cinza = indisponível. */
@@ -49,7 +51,13 @@ function createMarkerElement(vendor: MapVendor, isSelected: boolean) {
   return el
 }
 
-export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: MapboxMapProps) {
+export function MapboxMap({
+  beach,
+  vendors,
+  selectedVendorId,
+  onSelectVendor,
+  centerKey,
+}: MapboxMapProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [map, setMap] = React.useState<mapboxgl.Map | null>(null)
   const onSelectVendorRef = React.useRef(onSelectVendor)
@@ -110,14 +118,16 @@ export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: 
     }
   }, [map, vendors, selectedVendorId])
 
-  // Abre o mapa na posição do primeiro vendedor assim que a lista carrega. Roda uma vez por
-  // instância do mapa, para não reposicionar enquanto o usuário navega.
-  const centeredMapRef = React.useRef<mapboxgl.Map | null>(null)
+  // Centraliza no primeiro vendedor assim que a lista carrega. Roda uma vez por instância do
+  // mapa e por `centerKey` (praia + filtro), para não reposicionar enquanto o usuário navega.
+  const centeredRef = React.useRef<{ map: mapboxgl.Map; key: string } | null>(null)
   React.useEffect(() => {
-    if (!map || vendors.length === 0 || centeredMapRef.current === map) return
-    centeredMapRef.current = map
+    if (!map || vendors.length === 0) return
+    const centered = centeredRef.current
+    if (centered?.map === map && centered.key === centerKey) return
+    centeredRef.current = { map, key: centerKey }
     map.jumpTo({ center: [vendors[0].lng, vendors[0].lat] })
-  }, [map, vendors])
+  }, [map, vendors, centerKey])
 
   React.useEffect(() => {
     if (!map || !selectedVendorId) return
@@ -152,7 +162,7 @@ function FallbackMap({
   vendors,
   selectedVendorId,
   onSelectVendor,
-}: Omit<MapboxMapProps, "beach">) {
+}: Omit<MapboxMapProps, "beach" | "centerKey">) {
   return (
     <div className="relative h-full w-full overflow-hidden bg-linear-to-b from-brand-blue/40 via-brand-blue/20 to-brand-yellow/20">
       <p className="absolute inset-x-0 top-2 z-10 mx-auto w-fit rounded-full bg-background/80 px-3 py-1 text-center text-[0.65rem] text-muted-foreground backdrop-blur">

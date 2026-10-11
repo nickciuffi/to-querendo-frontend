@@ -1,5 +1,4 @@
 import { apiFetch } from "@/services/http-client"
-import { getProdutosByPraia } from "@/services/product-service"
 import {
   mapProdutoEspecifico,
   type ProdutoEspecificoResponse,
@@ -48,14 +47,15 @@ function isSellable(product: SellerProduct) {
 }
 
 /**
- * Busca todos os vendedores da praia: consulta a rota de localização uma vez
- * por produto base da praia e junta os resultados por vendedor.
+ * Busca os vendedores da praia: consulta a rota de localização uma vez por
+ * `idProdutoBase` informado e junta os resultados por vendedor.
  */
-export async function getVendedoresDaPraia(idPraia: number): Promise<MapVendor[]> {
-  const baseProducts = await getProdutosByPraia(idPraia)
-
+export async function getVendedoresDaPraia(
+  idPraia: number,
+  idsProdutoBase: number[]
+): Promise<MapVendor[]> {
   const results = await Promise.allSettled(
-    baseProducts.map((base) => getVendedoresLocalizacao(Number(base.id), idPraia))
+    idsProdutoBase.map((idProdutoBase) => getVendedoresLocalizacao(idProdutoBase, idPraia))
   )
 
   // Se todas as consultas falharem, propaga o erro em vez de mostrar um mapa vazio.
