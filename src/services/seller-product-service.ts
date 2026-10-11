@@ -6,7 +6,7 @@ interface ApiEnvelope<T> {
   messages: string[]
 }
 
-interface ProdutoEspecificoResponse {
+export interface ProdutoEspecificoResponse {
   id: number
   nome: string
   descricao?: string | null
@@ -20,7 +20,7 @@ interface ProdutoEspecificoResponse {
   tsCriacaoProduto: string
 }
 
-function mapProdutoEspecifico(body: ProdutoEspecificoResponse): SellerProduct {
+export function mapProdutoEspecifico(body: ProdutoEspecificoResponse): SellerProduct {
   return {
     id: body.id,
     name: body.nome,

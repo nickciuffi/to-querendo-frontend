@@ -3,22 +3,50 @@ import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 
 import { useAuth } from "@/hooks/use-auth"
-import type { Beach, Vendor } from "@/lib/types"
+import type { Beach, MapVendor } from "@/lib/types"
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const DEFAULT_STYLE = "mapbox://styles/mapbox/streets-v12"
 const OFFLINE_SELLER_STYLE = "mapbox://styles/mapbox/light-v11"
+const PRODUCT_FALLBACK_ICON = "🛒"
 
 interface MapboxMapProps {
   beach: Beach
-  vendors: Vendor[]
-  selectedVendorId: string | null
-  onSelectVendor: (vendorId: string) => void
+  vendors: MapVendor[]
+  selectedVendorId: number | null
+  onSelectVendor: (vendorId: number) => void
 }
 
-function markerColor(vendor: Vendor, isSelected: boolean) {
+/** Cor do anel do marcador: azul = selecionado, verde = disponível, cinza = indisponível. */
+function markerColor(vendor: MapVendor, isSelected: boolean) {
   if (isSelected) return "#1e88e5"
-  return vendor.isOpen ? "#ff7a29" : "#9ca3af"
+  return vendor.available ? "#22c55e" : "#9ca3af"
+}
+
+function createMarkerElement(vendor: MapVendor, isSelected: boolean) {
+  const el = document.createElement("button")
+  el.type = "button"
+  el.setAttribute("aria-label", `${vendor.name} — ${vendor.featuredProduct.baseProductName}`)
+  el.style.cssText =
+    "display:flex;align-items:center;justify-content:center;overflow:hidden;width:2.5rem;height:2.5rem;padding:0;border-radius:9999px;font-size:1.15rem;background:white;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;border:3px solid " +
+    markerColor(vendor, isSelected) +
+    (vendor.available ? "" : ";filter:grayscale(1);opacity:.85")
+
+  const photoUrl = vendor.featuredProduct.photoUrl
+  if (photoUrl) {
+    const img = document.createElement("img")
+    img.src = photoUrl
+    img.alt = ""
+    img.style.cssText = "width:100%;height:100%;object-fit:cover"
+    img.addEventListener("error", () => {
+      img.remove()
+      el.textContent = PRODUCT_FALLBACK_ICON
+    })
+    el.appendChild(img)
+  } else {
+    el.textContent = PRODUCT_FALLBACK_ICON
+  }
+  return el
 }
 
 export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: MapboxMapProps) {
@@ -68,13 +96,7 @@ export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: 
     if (!map) return
 
     const markers = vendors.map((vendor) => {
-      const el = document.createElement("button")
-      el.type = "button"
-      el.setAttribute("aria-label", vendor.name)
-      el.style.cssText =
-        "display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:9999px;border:2px solid white;font-size:1.05rem;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;background:" +
-        markerColor(vendor, vendor.id === selectedVendorId)
-      el.textContent = vendor.avatarEmoji
+      const el = createMarkerElement(vendor, vendor.id === selectedVendorId)
       el.addEventListener("click", (event) => {
         event.stopPropagation()
         onSelectVendorRef.current(vendor.id)
@@ -87,6 +109,15 @@ export function MapboxMap({ beach, vendors, selectedVendorId, onSelectVendor }: 
       markers.forEach((marker) => marker.remove())
     }
   }, [map, vendors, selectedVendorId])
+
+  // Abre o mapa na posição do primeiro vendedor assim que a lista carrega. Roda uma vez por
+  // instância do mapa, para não reposicionar enquanto o usuário navega.
+  const centeredMapRef = React.useRef<mapboxgl.Map | null>(null)
+  React.useEffect(() => {
+    if (!map || vendors.length === 0 || centeredMapRef.current === map) return
+    centeredMapRef.current = map
+    map.jumpTo({ center: [vendors[0].lng, vendors[0].lat] })
+  }, [map, vendors])
 
   React.useEffect(() => {
     if (!map || !selectedVendorId) return
@@ -136,15 +167,24 @@ function FallbackMap({
             type="button"
             aria-label={vendor.name}
             onClick={() => onSelectVendor(vendor.id)}
-            className="absolute flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-base shadow-md transition-transform"
+            className="absolute flex size-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full border-[3px] bg-white text-lg shadow-md transition-transform"
             style={{
               top: position.top,
               left: position.left,
-              background: markerColor(vendor, isSelected),
+              borderColor: markerColor(vendor, isSelected),
+              filter: vendor.available ? undefined : "grayscale(1)",
               transform: isSelected ? "translate(-50%, -50%) scale(1.15)" : "translate(-50%, -50%)",
             }}
           >
-            {vendor.avatarEmoji}
+            {vendor.featuredProduct.photoUrl ? (
+              <img
+                src={vendor.featuredProduct.photoUrl}
+                alt=""
+                className="size-full object-cover"
+              />
+            ) : (
+              PRODUCT_FALLBACK_ICON
+            )}
           </button>
         )
       })}

@@ -17,6 +17,19 @@ export interface Vendor {
   specialty: string
 }
 
+/** Vendedor da praia posicionado no mapa, com os produtos que ele vende. */
+export interface MapVendor {
+  id: number
+  name: string
+  lat: number
+  lng: number
+  products: SellerProduct[]
+  /** Produto que representa o vendedor no ícone do mapa. */
+  featuredProduct: SellerProduct
+  /** Tem ao menos um produto ativo à venda. */
+  available: boolean
+}
+
 export interface Product {
   id: string
   name: string
