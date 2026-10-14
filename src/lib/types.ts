@@ -77,3 +77,13 @@ export interface SellerProduct {
   baseProductActive: boolean
   createdAt: string
 }
+
+export interface PurchaseIntention {
+  id: number
+  baseProductId: number
+  baseProductName: string
+  locationDescription: string
+  observations: string
+  photoUrl: string | null
+  createdAt: string
+}

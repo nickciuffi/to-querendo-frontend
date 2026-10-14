@@ -10,7 +10,7 @@ export function BottomNav() {
   const navItems = [
     { to: "/", label: "Início", icon: Home, end: true },
     { to: "/mapa", label: "Mapa", icon: MapPin, end: false },
-    { to: "#", label: "Pedidos", icon: ShoppingBag, disabled: true },
+    { to: "/pedidos", label: "Pedidos", icon: ShoppingBag, end: false },
     { to: "/usuario", label: "Perfil", icon: UserRound, end: false },
     ...(hasRole("ROLE_ADMIN") ? [{ to: "/admin", label: "Admin", icon: ShieldCheck, end: false }] : []),
   ]
