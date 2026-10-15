@@ -54,23 +54,22 @@ export function MapPage() {
     }
   }, [beachId])
 
-  // Vendedores: o valor do filtro vai no `idProdutoBase` da rota (ou todos os produtos da praia).
+  // Vendedores: o valor do filtro vai no `idProdutoBase` da rota (nulo = todos os produtos da praia).
   React.useEffect(() => {
     if (!beachId || !products) return
 
     let cancelled = false
 
-    async function loadVendors(id: number, productList: Product[]) {
+    async function loadVendors(id: number) {
       setIsLoading(true)
       setError(null)
       setVendors([])
       setSelectedVendorId(null)
-      const ids =
-        productFilter === ALL_PRODUCTS
-          ? productList.map((product) => Number(product.id))
-          : [Number(productFilter)]
       try {
-        const result = await getVendedoresDaPraia(id, ids)
+        const result = await getVendedoresDaPraia(
+          id,
+          productFilter === ALL_PRODUCTS ? null : Number(productFilter)
+        )
         if (!cancelled) setVendors(result)
       } catch {
         if (!cancelled) setError("Não foi possível carregar os vendedores dessa praia.")
@@ -79,7 +78,7 @@ export function MapPage() {
       }
     }
 
-    loadVendors(beachId, products)
+    loadVendors(beachId)
 
     return () => {
       cancelled = true
