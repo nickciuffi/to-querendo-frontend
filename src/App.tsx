@@ -10,7 +10,18 @@ import { AdminPage } from "@/pages/admin/admin-page"
 import { UsuarioPage } from "@/pages/usuario-page"
 import { PedidosPage } from "@/pages/pedidos-page"
 
+import { useAuth } from "@/hooks/use-auth"
+
 const MapPage = lazy(() => import("@/pages/map-page").then((m) => ({ default: m.MapPage })))
+const VendorsMapPage = lazy(() =>
+  import("@/pages/vendors-map-page").then((m) => ({ default: m.VendorsMapPage }))
+)
+
+/** Vendedores veem o mapa de banhistas; os demais usuários veem o mapa de vendedores. */
+function MapRoute() {
+  const { hasRole } = useAuth()
+  return hasRole("ROLE_VENDEDOR") ? <VendorsMapPage /> : <MapPage />
+}
 
 function App() {
   return (
@@ -24,7 +35,7 @@ function App() {
             path="mapa"
             element={
               <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted-foreground">Carregando mapa…</div>}>
-                <MapPage />
+                <MapRoute />
               </Suspense>
             }
           />

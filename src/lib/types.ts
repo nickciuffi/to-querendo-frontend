@@ -30,6 +30,27 @@ export interface MapVendor {
   available: boolean
 }
 
+/** Ponto genérico desenhado no mapa (vendedor ou banhista). */
+export interface MapMarker {
+  id: number
+  label: string
+  lat: number
+  lng: number
+  /** Foto que preenche o ícone; sem ela, usa o emoji padrão. */
+  photoUrl: string | null
+  /** Cor do anel quando o marcador não está selecionado. */
+  ringColor: string
+  /** Desenha o ícone em tons de cinza. */
+  dimmed?: boolean
+}
+
+/** Banhista com intenção(ões) de compra, exibido no mapa do vendedor. */
+export interface BuyerWithIntentions {
+  id: number
+  name: string
+  intentions: PurchaseIntention[]
+}
+
 export interface Product {
   id: string
   name: string

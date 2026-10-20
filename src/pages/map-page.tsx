@@ -7,7 +7,7 @@ import { MapboxMap } from "@/components/mapbox-map"
 import { useAuth } from "@/hooks/use-auth"
 import { getBeachByName } from "@/lib/mock-data"
 import { ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
-import type { MapVendor, Product } from "@/lib/types"
+import type { MapMarker, MapVendor, Product } from "@/lib/types"
 import { getProdutosByPraia } from "@/services/product-service"
 import { getVendedoresDaPraia } from "@/services/vendor-location-service"
 
@@ -22,7 +22,7 @@ export function MapPage() {
   const beachId = user?.beach?.id
 
   const [loadedVendors, setVendors] = React.useState<MapVendor[]>([])
-  const vendors = beachId ? loadedVendors : []
+  const vendors = React.useMemo(() => (beachId ? loadedVendors : []), [beachId, loadedVendors])
   const [products, setProducts] = React.useState<Product[] | null>(null)
   const [productFilter, setProductFilter] = React.useState(ALL_PRODUCTS)
   const [isLoading, setIsLoading] = React.useState(false)
@@ -85,6 +85,21 @@ export function MapPage() {
     }
   }, [beachId, products, productFilter])
 
+  const markers = React.useMemo<MapMarker[]>(
+    () =>
+      vendors.map((vendor) => ({
+        id: vendor.id,
+        label: `${vendor.name} — ${vendor.featuredProduct.baseProductName}`,
+        lat: vendor.lat,
+        lng: vendor.lng,
+        photoUrl: vendor.featuredProduct.photoUrl,
+        // Verde = disponível, cinza = indisponível.
+        ringColor: vendor.available ? "#22c55e" : "#9ca3af",
+        dimmed: !vendor.available,
+      })),
+    [vendors]
+  )
+
   const selectedVendor = vendors.find((vendor) => vendor.id === selectedVendorId) ?? null
   const availableCount = vendors.filter((vendor) => vendor.available).length
 
@@ -96,9 +111,9 @@ export function MapPage() {
         <div className="absolute inset-0">
           <MapboxMap
             beach={beach}
-            vendors={vendors}
-            selectedVendorId={selectedVendorId}
-            onSelectVendor={setSelectedVendorId}
+            markers={markers}
+            selectedMarkerId={selectedVendorId}
+            onSelectMarker={setSelectedVendorId}
             centerKey={`${beachId}:${productFilter}`}
           />
         </div>
