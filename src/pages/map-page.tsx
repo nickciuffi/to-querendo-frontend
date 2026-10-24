@@ -4,6 +4,7 @@ import { MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MapboxMap } from "@/components/mapbox-map"
+import { VendorProductsModal } from "@/components/vendor-products-modal"
 import { useAuth } from "@/hooks/use-auth"
 import { getBeachByName } from "@/lib/mock-data"
 import { ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
@@ -28,6 +29,7 @@ export function MapPage() {
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [selectedVendorId, setSelectedVendorId] = React.useState<number | null>(null)
+  const [isVendorProductsModalOpen, setIsVendorProductsModalOpen] = React.useState(false)
 
   // Produtos da praia: alimentam as opções do filtro.
   React.useEffect(() => {
@@ -169,12 +171,23 @@ export function MapPage() {
               ))}
             </ul>
 
-            <Button className="w-full bg-brand-orange text-white hover:bg-brand-orange/90">
+            <Button
+              className="w-full bg-brand-orange text-white hover:bg-brand-orange/90"
+              onClick={() => setIsVendorProductsModalOpen(true)}
+            >
               Tô Querendo
             </Button>
           </div>
         )}
       </div>
+
+      {selectedVendor && (
+        <VendorProductsModal
+          vendor={selectedVendor}
+          open={isVendorProductsModalOpen}
+          onOpenChange={setIsVendorProductsModalOpen}
+        />
+      )}
     </div>
   )
 }
