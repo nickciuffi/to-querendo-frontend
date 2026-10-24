@@ -1,5 +1,5 @@
 import { apiFetch } from "@/services/http-client"
-import type { PurchaseIntention } from "@/lib/types"
+import type { BuyerWithIntentions, PurchaseIntention } from "@/lib/types"
 
 interface ApiEnvelope<T> {
   response: T
@@ -44,6 +44,26 @@ function mapIntencaoCompra(body: IntencaoCompraResponse): PurchaseIntention {
     photoUrl: body.urlFotoLocal || null,
     createdAt: body.tsCriacaoIntencao,
   }
+}
+
+interface BanhistaIntencaoResponse {
+  idUsuario: number
+  nomeUsuario: string
+  intencoesCompra: IntencaoCompraResponse[]
+}
+
+/** Banhistas com intenção de compra (por enquanto, todos; sem filtro por produto do vendedor). */
+export async function getBanhistasComIntencao(): Promise<BuyerWithIntentions[]> {
+  const { response } = await apiFetch<ApiEnvelope<BanhistaIntencaoResponse[]>>(
+    "/intencao-compra/banhistas"
+  )
+  return (response ?? [])
+    .map((body) => ({
+      id: body.idUsuario,
+      name: body.nomeUsuario,
+      intentions: (body.intencoesCompra ?? []).map(mapIntencaoCompra),
+    }))
+    .filter((buyer) => buyer.intentions.length > 0)
 }
 
 export async function getMinhasIntencoes(): Promise<PurchaseIntention[]> {
