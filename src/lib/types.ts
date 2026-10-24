@@ -36,8 +36,10 @@ export interface MapMarker {
   label: string
   lat: number
   lng: number
-  /** Foto que preenche o ícone; sem ela, usa o emoji padrão. */
+  /** Foto que preenche o ícone; sem ela, usa as iniciais (se houver) ou o emoji padrão. */
   photoUrl: string | null
+  /** Iniciais exibidas no ícone quando não há foto (ex.: nome de um banhista). */
+  initials?: string
   /** Cor do anel quando o marcador não está selecionado. */
   ringColor: string
   /** Desenha o ícone em tons de cinza. */

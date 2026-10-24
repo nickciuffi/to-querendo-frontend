@@ -6,6 +6,7 @@ import { SellerOnlineFloatingButton } from "@/components/vendedor/seller-online-
 import { useAuth } from "@/hooks/use-auth"
 import { getBeachByName } from "@/lib/mock-data"
 import type { BuyerWithIntentions, MapMarker } from "@/lib/types"
+import { getInitials } from "@/lib/utils"
 import { getBanhistasComIntencao } from "@/services/purchase-intention-service"
 
 const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
@@ -61,6 +62,7 @@ export function VendorsMapPage() {
         label: `${buyer.name} — ${buyer.intentions[0].baseProductName}`,
         ...provisionalPosition(beach.center, index),
         photoUrl: buyer.intentions[0].photoUrl,
+        initials: getInitials(buyer.name),
         ringColor: BUYER_RING_COLOR,
       })),
     [buyers, beach.center]

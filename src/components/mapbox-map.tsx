@@ -42,9 +42,14 @@ function createMarkerElement(marker: MapMarker, isSelected: boolean) {
     img.style.cssText = "width:100%;height:100%;object-fit:cover"
     img.addEventListener("error", () => {
       img.remove()
-      el.textContent = MARKER_FALLBACK_ICON
+      el.textContent = marker.initials || MARKER_FALLBACK_ICON
+      if (marker.initials) el.style.fontSize = "0.9rem"
     })
     el.appendChild(img)
+  } else if (marker.initials) {
+    el.textContent = marker.initials
+    el.style.fontSize = "0.9rem"
+    el.style.fontWeight = "600"
   } else {
     el.textContent = MARKER_FALLBACK_ICON
   }
@@ -186,6 +191,8 @@ function FallbackMap({
           >
             {marker.photoUrl ? (
               <img src={marker.photoUrl} alt="" className="size-full object-cover" />
+            ) : marker.initials ? (
+              <span className="text-sm font-semibold">{marker.initials}</span>
             ) : (
               MARKER_FALLBACK_ICON
             )}
