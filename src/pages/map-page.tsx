@@ -1,84 +1,208 @@
 import * as React from "react"
-import { MapPin, Star } from "lucide-react"
+import { MapPin } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MapboxMap } from "@/components/mapbox-map"
+import { VendorProductsModal } from "@/components/vendor-products-modal"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachByName, getProductsByVendorId, VENDORS } from "@/lib/mock-data"
+import { getBeachByName } from "@/lib/mock-data"
+import { ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
+import type { MapMarker, MapVendor, Product } from "@/lib/types"
+import { getProdutosByPraia } from "@/services/product-service"
+import { getVendedoresDaPraia } from "@/services/vendor-location-service"
 
 const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
 
+const priceFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+
 export function MapPage() {
   const { user } = useAuth()
-  // A API ainda não retorna coordenadas da praia atual, só o nome — tentamos casar
-  // com o catálogo mockado e caímos no fallback quando não há correspondência.
-  const beach = (user ? getBeachByName(user.beachName) : undefined) ?? FALLBACK_BEACH
-  const [selectedVendorId, setSelectedVendorId] = React.useState<string | null>(null)
 
-  const selectedVendor = VENDORS.find((vendor) => vendor.id === selectedVendorId) ?? null
-  const products = selectedVendor ? getProductsByVendorId(selectedVendor.id) : []
+  const beach = (user?.beach ? getBeachByName(user.beach.name) : undefined) ?? FALLBACK_BEACH
+  const beachId = user?.beach?.id
+
+  const [loadedVendors, setVendors] = React.useState<MapVendor[]>([])
+  const vendors = React.useMemo(() => (beachId ? loadedVendors : []), [beachId, loadedVendors])
+  const [products, setProducts] = React.useState<Product[] | null>(null)
+  const [productFilter, setProductFilter] = React.useState(ALL_PRODUCTS)
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [selectedVendorId, setSelectedVendorId] = React.useState<number | null>(null)
+  const [isVendorProductsModalOpen, setIsVendorProductsModalOpen] = React.useState(false)
+
+  // Produtos da praia: alimentam as opções do filtro.
+  React.useEffect(() => {
+    if (!beachId) return
+
+    let cancelled = false
+
+    async function loadProducts(id: number) {
+      setProducts(null)
+      setProductFilter(ALL_PRODUCTS)
+      setError(null)
+      try {
+        const result = await getProdutosByPraia(id)
+        if (!cancelled) setProducts(result)
+      } catch {
+        if (!cancelled) setError("Não foi possível carregar os produtos dessa praia.")
+      }
+    }
+
+    loadProducts(beachId)
+
+    return () => {
+      cancelled = true
+    }
+  }, [beachId])
+
+  // Vendedores: o valor do filtro vai no `idProdutoBase` da rota (nulo = todos os produtos da praia).
+  React.useEffect(() => {
+    if (!beachId || !products) return
+
+    let cancelled = false
+
+    async function loadVendors(id: number) {
+      setIsLoading(true)
+      setError(null)
+      setVendors([])
+      setSelectedVendorId(null)
+      try {
+        const result = await getVendedoresDaPraia(
+          id,
+          productFilter === ALL_PRODUCTS ? null : Number(productFilter)
+        )
+        if (!cancelled) setVendors(result)
+      } catch {
+        if (!cancelled) setError("Não foi possível carregar os vendedores dessa praia.")
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    loadVendors(beachId)
+
+    return () => {
+      cancelled = true
+    }
+  }, [beachId, products, productFilter])
+
+  const markers = React.useMemo<MapMarker[]>(
+    () =>
+      vendors.map((vendor) => ({
+        id: vendor.id,
+        label: `${vendor.name} — ${vendor.featuredProduct.baseProductName}`,
+        lat: vendor.lat,
+        lng: vendor.lng,
+        photoUrl: vendor.featuredProduct.photoUrl,
+        // Verde = disponível, cinza = indisponível.
+        ringColor: vendor.available ? "#22c55e" : "#9ca3af",
+        dimmed: !vendor.available,
+      })),
+    [vendors]
+  )
+
+  const selectedVendor = vendors.find((vendor) => vendor.id === selectedVendorId) ?? null
+  const availableCount = vendors.filter((vendor) => vendor.available).length
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-[4]">
-        <MapboxMap
-          beach={beach}
-          vendors={VENDORS}
-          selectedVendorId={selectedVendorId}
-          onSelectVendor={setSelectedVendorId}
-        />
+    <div className="flex flex-1 flex-col">
+      {/* O layout só tem altura mínima, então o mapa fica em posição absoluta para ter
+          uma altura definida — o Mapbox não desenha em container com altura 0. */}
+      <div className="relative min-h-0 flex-[4]">
+        <div className="absolute inset-0">
+          <MapboxMap
+            beach={beach}
+            markers={markers}
+            selectedMarkerId={selectedVendorId}
+            onSelectMarker={setSelectedVendorId}
+            centerKey={`${beachId}:${productFilter}`}
+          />
+        </div>
+        {/* Fica dentro do container do mapa (abaixo do header) e deixa livre o canto direito,
+            onde ficam os controles de zoom do Mapbox. */}
+        <div className="absolute left-3 top-3 z-10 w-[calc(100%-4.5rem)] max-w-xs">
+          <ProductFilterSelect
+            products={products ?? []}
+            value={productFilter}
+            onValueChange={setProductFilter}
+            disabled={!beachId || products === null}
+          />
+        </div>
       </div>
 
       <div className="flex-[1] min-h-[7.5rem] overflow-y-auto border-t border-border bg-card px-4 py-3">
         {!selectedVendor && (
           <div className="flex h-full flex-col items-center justify-center gap-1 text-center">
             <MapPin className="size-5 text-brand-blue" />
-            <p className="text-sm font-medium text-foreground">Toque em um vendedor no mapa</p>
-            <p className="text-xs text-muted-foreground">
-              {VENDORS.filter((v) => v.isOpen).length} vendedores abertos perto de você
-            </p>
+            {isLoading ? (
+              <p className="text-sm font-medium text-foreground">Buscando vendedores...</p>
+            ) : error ? (
+              <p className="text-sm font-medium text-destructive">{error}</p>
+            ) : !beachId ? (
+              <p className="text-sm font-medium text-foreground">Escolha uma praia para ver os vendedores</p>
+            ) : vendors.length === 0 ? (
+              <p className="text-sm font-medium text-foreground">Nenhum vendedor encontrado nessa praia</p>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-foreground">Toque em um vendedor no mapa</p>
+                <p className="text-xs text-muted-foreground">
+                  {availableCount} {availableCount === 1 ? "vendedor disponível" : "vendedores disponíveis"} na praia
+                </p>
+              </>
+            )}
           </div>
         )}
 
         {selectedVendor && (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-3">
-              <Avatar size="lg">
-                <AvatarFallback className="bg-brand-orange/15 text-lg text-brand-orange">
-                  {selectedVendor.avatarEmoji}
-                </AvatarFallback>
-              </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-heading text-sm font-semibold text-foreground">
                   {selectedVendor.name}
                 </p>
-                <p className="truncate text-xs text-muted-foreground">{selectedVendor.specialty}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {selectedVendor.products.length}{" "}
+                  {selectedVendor.products.length === 1 ? "produto" : "produtos"}
+                </p>
               </div>
               <Badge
-                variant={selectedVendor.isOpen ? "default" : "secondary"}
-                className={selectedVendor.isOpen ? "bg-brand-blue text-white" : ""}
+                variant={selectedVendor.available ? "default" : "secondary"}
+                className={selectedVendor.available ? "bg-brand-blue text-white" : ""}
               >
-                {selectedVendor.isOpen ? "Aberto" : "Fechado"}
+                {selectedVendor.available ? "Disponível" : "Indisponível"}
               </Badge>
             </div>
 
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Star className="size-3.5 fill-brand-yellow text-brand-yellow" />
-                {selectedVendor.rating.toFixed(1)}
-              </span>
-              <span>{selectedVendor.distanceMeters} m de você</span>
-              {products.length > 0 && <span>{products.length} produtos</span>}
-            </div>
+            <ul className="flex flex-col gap-1.5">
+              {selectedVendor.products.map((product) => (
+                <li key={product.id} className="flex items-center gap-2 text-xs">
+                  <span className="min-w-0 flex-1 truncate text-foreground">{product.name}</span>
+                  <span className="text-muted-foreground">{priceFormatter.format(product.price)}</span>
+                  {!(product.active && product.baseProductActive) && (
+                    <Badge variant="secondary">Indisponível</Badge>
+                  )}
+                </li>
+              ))}
+            </ul>
 
-            <Button className="w-full bg-brand-orange text-white hover:bg-brand-orange/90">
+            <Button
+              className="w-full bg-brand-orange text-white hover:bg-brand-orange/90"
+              onClick={() => setIsVendorProductsModalOpen(true)}
+            >
               Tô Querendo
             </Button>
           </div>
         )}
       </div>
+
+      {selectedVendor && (
+        <VendorProductsModal
+          vendor={selectedVendor}
+          open={isVendorProductsModalOpen}
+          onOpenChange={setIsVendorProductsModalOpen}
+        />
+      )}
     </div>
   )
 }

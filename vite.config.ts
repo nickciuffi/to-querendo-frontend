@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['ToQuerendoIcon.svg'],
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
@@ -25,9 +25,9 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         icons: [
-          { src: '/pwa-icon.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/pwa-icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/pwa-icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
+          { src: '/ToQuerendoIcon.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/ToQuerendoIcon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/ToQuerendoIcon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
         ],
       },
     }),
