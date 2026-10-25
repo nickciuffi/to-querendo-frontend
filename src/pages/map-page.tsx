@@ -6,21 +6,19 @@ import { Button } from "@/components/ui/button"
 import { MapboxMap } from "@/components/mapbox-map"
 import { VendorProductsModal } from "@/components/vendor-products-modal"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachByName } from "@/lib/mock-data"
+import { getBeachCenter } from "@/lib/coordinates"
 import { ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
 import type { MapMarker, MapVendor, Product } from "@/lib/types"
 import { getProdutosByPraia } from "@/services/product-service"
 import { getVendedoresDaPraia } from "@/services/vendor-location-service"
-
-const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
 
 const priceFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
 
 export function MapPage() {
   const { user } = useAuth()
 
-  const beach = (user?.beach ? getBeachByName(user.beach.name) : undefined) ?? FALLBACK_BEACH
   const beachId = user?.beach?.id
+  const beachCenter = getBeachCenter(user?.beach)
 
   const [loadedVendors, setVendors] = React.useState<MapVendor[]>([])
   const vendors = React.useMemo(() => (beachId ? loadedVendors : []), [beachId, loadedVendors])
@@ -112,11 +110,11 @@ export function MapPage() {
       <div className="relative min-h-0 flex-[4]">
         <div className="absolute inset-0">
           <MapboxMap
-            beach={beach}
+            center={beachCenter}
             markers={markers}
             selectedMarkerId={selectedVendorId}
             onSelectMarker={setSelectedVendorId}
-            centerKey={`${beachId}:${productFilter}`}
+            centerKey={String(beachId ?? "sem-praia")}
           />
         </div>
         {/* Fica dentro do container do mapa (abaixo do header) e deixa livre o canto direito,

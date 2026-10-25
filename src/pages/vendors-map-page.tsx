@@ -4,12 +4,10 @@ import { MapPin } from "lucide-react"
 import { MapboxMap } from "@/components/mapbox-map"
 import { SellerOnlineFloatingButton } from "@/components/vendedor/seller-online-floating-button"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachByName } from "@/lib/mock-data"
+import { getBeachCenter } from "@/lib/coordinates"
 import type { BuyerWithIntentions, MapMarker } from "@/lib/types"
 import { getInitials } from "@/lib/utils"
 import { getBanhistasComIntencao } from "@/services/purchase-intention-service"
-
-const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
 
 const BUYER_RING_COLOR = "#FC800C"
 
@@ -26,7 +24,9 @@ function provisionalPosition(center: [number, number], index: number) {
 export function VendorsMapPage() {
   const { user } = useAuth()
 
-  const beach = (user?.beach ? getBeachByName(user.beach.name) : undefined) ?? FALLBACK_BEACH
+  const beachId = user?.beach?.id
+  const beachCenter = getBeachCenter(user?.beach)
+  const [centerLng, centerLat] = beachCenter ?? [null, null]
 
   const [buyers, setBuyers] = React.useState<BuyerWithIntentions[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -55,18 +55,18 @@ export function VendorsMapPage() {
     }
   }, [])
 
-  const markers = React.useMemo<MapMarker[]>(
-    () =>
-      buyers.map((buyer, index) => ({
-        id: buyer.id,
-        label: `${buyer.name} — ${buyer.intentions[0].baseProductName}`,
-        ...provisionalPosition(beach.center, index),
-        photoUrl: buyer.intentions[0].photoUrl,
-        initials: getInitials(buyer.name),
-        ringColor: BUYER_RING_COLOR,
-      })),
-    [buyers, beach.center]
-  )
+  // Sem coordenadas da praia não há onde posicionar os banhistas (posições provisórias, ver TODO).
+  const markers = React.useMemo<MapMarker[]>(() => {
+    if (centerLng === null || centerLat === null) return []
+    return buyers.map((buyer, index) => ({
+      id: buyer.id,
+      label: `${buyer.name} — ${buyer.intentions[0].baseProductName}`,
+      ...provisionalPosition([centerLng, centerLat], index),
+      photoUrl: buyer.intentions[0].photoUrl,
+      initials: getInitials(buyer.name),
+      ringColor: BUYER_RING_COLOR,
+    }))
+  }, [buyers, centerLng, centerLat])
 
   const selectedBuyer = buyers.find((buyer) => buyer.id === selectedBuyerId) ?? null
 
@@ -75,11 +75,11 @@ export function VendorsMapPage() {
       <div className="relative min-h-0 flex-[4]">
         <div className="absolute inset-0">
           <MapboxMap
-            beach={beach}
+            center={beachCenter}
             markers={markers}
             selectedMarkerId={selectedBuyerId}
             onSelectMarker={setSelectedBuyerId}
-            centerKey={String(beach.id)}
+            centerKey={String(beachId ?? "sem-praia")}
             offlineStyle={!user?.online}
           />
         </div>
@@ -93,6 +93,12 @@ export function VendorsMapPage() {
               <p className="text-sm font-medium text-foreground">Buscando banhistas...</p>
             ) : error ? (
               <p className="text-sm font-medium text-destructive">{error}</p>
+            ) : !beachId ? (
+              <p className="text-sm font-medium text-foreground">Escolha uma praia para ver os banhistas</p>
+            ) : !beachCenter ? (
+              <p className="text-sm font-medium text-foreground">
+                A localização da sua praia ainda não foi cadastrada
+              </p>
             ) : buyers.length === 0 ? (
               <p className="text-sm font-medium text-foreground">Nenhum banhista querendo comprar agora</p>
             ) : (

@@ -2,20 +2,28 @@ import * as React from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 
-import type { Beach, MapMarker } from "@/lib/types"
+import type { MapMarker } from "@/lib/types"
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const DEFAULT_STYLE = "mapbox://styles/mapbox/streets-v12"
 const OFFLINE_STYLE = "mapbox://styles/mapbox/light-v11"
 const SELECTED_RING_COLOR = "#1e88e5"
 const MARKER_FALLBACK_ICON = "🛒"
+const BEACH_ZOOM = 15.5
+// Visão do Brasil inteiro, usada só enquanto não há praia com coordenadas nem marcadores.
+const NO_BEACH_CENTER: [number, number] = [-51.9, -14.2]
+const NO_BEACH_ZOOM = 3.5
 
 interface MapboxMapProps {
-  beach: Beach
+  /** Centro da praia selecionada, em `[longitude, latitude]`. `null` se ela não tiver coordenadas. */
+  center: [number, number] | null
   markers: MapMarker[]
   selectedMarkerId: number | null
   onSelectMarker: (markerId: number) => void
-  /** Quando muda, o mapa volta a centralizar no primeiro marcador da próxima lista carregada. */
+  /**
+   * Identifica a praia. Quando muda, o mapa volta para o centro dela — ou, se ela não tiver
+   * coordenadas, para o primeiro marcador da próxima lista carregada.
+   */
   centerKey: string
   /** Usa o estilo de mapa claro (ex.: vendedor offline). */
   offlineStyle?: boolean
@@ -57,7 +65,7 @@ function createMarkerElement(marker: MapMarker, isSelected: boolean) {
 }
 
 export function MapboxMap({
-  beach,
+  center,
   markers,
   selectedMarkerId,
   onSelectMarker,
@@ -82,8 +90,8 @@ export function MapboxMap({
     const instance = new mapboxgl.Map({
       container: containerRef.current,
       style: mapStyle,
-      center: beach.center,
-      zoom: 15.5,
+      center: center ?? NO_BEACH_CENTER,
+      zoom: center ? BEACH_ZOOM : NO_BEACH_ZOOM,
       attributionControl: false,
     })
     instance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right")
@@ -94,8 +102,9 @@ export function MapboxMap({
       instance.remove()
       setMap(null)
     }
+    // O mapa é criado uma vez; trocas de praia são tratadas pelo efeito de centralização abaixo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [beach.id])
+  }, [])
 
   React.useEffect(() => {
     if (!map || appliedStyleRef.current === mapStyle) return
@@ -121,16 +130,21 @@ export function MapboxMap({
     }
   }, [map, markers, selectedMarkerId])
 
-  // Centraliza no primeiro marcador assim que a lista carrega. Roda uma vez por instância do
-  // mapa e por `centerKey` (praia + filtro), para não reposicionar enquanto o usuário navega.
+  // Centraliza na praia uma vez por instância do mapa e por `centerKey`, para não reposicionar
+  // enquanto o usuário navega. Sem coordenadas da praia, usa o primeiro marcador quando a lista chega.
   const centeredRef = React.useRef<{ map: mapboxgl.Map; key: string } | null>(null)
   React.useEffect(() => {
-    if (!map || markers.length === 0) return
+    if (!map) return
     const centered = centeredRef.current
     if (centered?.map === map && centered.key === centerKey) return
+
+    const target: [number, number] | null =
+      center ?? (markers.length > 0 ? [markers[0].lng, markers[0].lat] : null)
+    if (!target) return
+
     centeredRef.current = { map, key: centerKey }
-    map.jumpTo({ center: [markers[0].lng, markers[0].lat] })
-  }, [map, markers, centerKey])
+    map.jumpTo({ center: target, zoom: BEACH_ZOOM })
+  }, [map, center, markers, centerKey])
 
   React.useEffect(() => {
     if (!map || !selectedMarkerId) return
