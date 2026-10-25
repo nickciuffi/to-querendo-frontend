@@ -72,3 +72,20 @@ export async function getMinhasIntencoes(): Promise<PurchaseIntention[]> {
   )
   return response.map(mapIntencaoCompra)
 }
+
+export interface ConcludePurchaseIntentionPayload {
+  idProdutoBase: number
+  /** Texto livre de até 200 caracteres (a API só exige que não seja vazio). */
+  motivo: string
+}
+
+/**
+ * Conclui a intenção de compra ativa do usuário para o produto base. A API não apaga o registro:
+ * ela marca a intenção como inativa e guarda o motivo e a data da conclusão.
+ */
+export async function concludePurchaseIntention(payload: ConcludePurchaseIntentionPayload): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>("/intencao-compra", {
+    method: "DELETE",
+    body: payload,
+  })
+}
