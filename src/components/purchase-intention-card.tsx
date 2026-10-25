@@ -1,5 +1,6 @@
-import { CalendarClock, MapPin, Package } from "lucide-react"
+import { CalendarClock, CircleCheck, MapPin, Package } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { PurchaseIntention } from "@/lib/types"
 
@@ -16,9 +17,11 @@ function formatCreatedAt(createdAt: string) {
 export function PurchaseIntentionCard({
   intention,
   baseProductPhotoUrl,
+  onConclude,
 }: {
   intention: PurchaseIntention
   baseProductPhotoUrl: string | null
+  onConclude: (intention: PurchaseIntention) => void
 }) {
   return (
     <Card className="gap-1.5 rounded-xl border-2 border-white/10 bg-[#0F172A] ring-0 py-0">
@@ -39,9 +42,21 @@ export function PurchaseIntentionCard({
         )}
       </div>
       <CardContent className="flex flex-1 flex-col gap-1.5 px-3 pb-3">
-        <p className="text-[0.65rem] font-medium uppercase tracking-wide text-white/40">
-          {intention.baseProductName}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="pt-1 text-[0.65rem] font-medium uppercase tracking-wide text-white/40">
+            {intention.baseProductName}
+          </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="-mt-1 -mr-1.5 shrink-0 text-white/60 hover:bg-emerald-500/15 hover:text-emerald-400"
+            onClick={() => onConclude(intention)}
+            title="Concluir pedido"
+          >
+            <CircleCheck className="size-5" />
+            <span className="sr-only">Concluir pedido</span>
+          </Button>
+        </div>
         <p className="flex items-start gap-1 text-sm text-white">
           <MapPin className="mt-0.5 size-3.5 shrink-0 text-white/40" />
           <span className="line-clamp-2">{intention.locationDescription}</span>
