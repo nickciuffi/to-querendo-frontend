@@ -9,12 +9,14 @@ import { LoginPage } from "@/pages/login-page"
 import { AdminPage } from "@/pages/admin/admin-page"
 import { UsuarioPage } from "@/pages/usuario-page"
 import { PedidosPage } from "@/pages/pedidos-page"
+import { LandingPage } from "@/pages/landing-page"
 
 const MapPage = lazy(() => import("@/pages/map-page").then((m) => ({ default: m.MapPage })))
 
 function App() {
   return (
     <Routes>
+      <Route path="/hello" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
       <Route element={<ProtectedRoute />}>
