@@ -4,30 +4,30 @@ import { MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MapboxMap } from "@/components/mapbox-map"
+import { VendorProductsModal } from "@/components/vendor-products-modal"
 import { useAuth } from "@/hooks/use-auth"
-import { getBeachByName } from "@/lib/mock-data"
+import { getBeachCenter } from "@/lib/coordinates"
 import { ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
-import type { MapVendor, Product } from "@/lib/types"
+import type { MapMarker, MapVendor, Product } from "@/lib/types"
 import { getProdutosByPraia } from "@/services/product-service"
 import { getVendedoresDaPraia } from "@/services/vendor-location-service"
-
-const FALLBACK_BEACH = { id: "copacabana", name: "Copacabana", city: "Rio de Janeiro", center: [-43.1822, -22.9711] as [number, number] }
 
 const priceFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
 
 export function MapPage() {
   const { user } = useAuth()
 
-  const beach = (user?.beach ? getBeachByName(user.beach.name) : undefined) ?? FALLBACK_BEACH
   const beachId = user?.beach?.id
+  const beachCenter = getBeachCenter(user?.beach)
 
   const [loadedVendors, setVendors] = React.useState<MapVendor[]>([])
-  const vendors = beachId ? loadedVendors : []
+  const vendors = React.useMemo(() => (beachId ? loadedVendors : []), [beachId, loadedVendors])
   const [products, setProducts] = React.useState<Product[] | null>(null)
   const [productFilter, setProductFilter] = React.useState(ALL_PRODUCTS)
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [selectedVendorId, setSelectedVendorId] = React.useState<number | null>(null)
+  const [isVendorProductsModalOpen, setIsVendorProductsModalOpen] = React.useState(false)
 
   // Produtos da praia: alimentam as opções do filtro.
   React.useEffect(() => {
@@ -54,23 +54,22 @@ export function MapPage() {
     }
   }, [beachId])
 
-  // Vendedores: o valor do filtro vai no `idProdutoBase` da rota (ou todos os produtos da praia).
+  // Vendedores: o valor do filtro vai no `idProdutoBase` da rota (nulo = todos os produtos da praia).
   React.useEffect(() => {
     if (!beachId || !products) return
 
     let cancelled = false
 
-    async function loadVendors(id: number, productList: Product[]) {
+    async function loadVendors(id: number) {
       setIsLoading(true)
       setError(null)
       setVendors([])
       setSelectedVendorId(null)
-      const ids =
-        productFilter === ALL_PRODUCTS
-          ? productList.map((product) => Number(product.id))
-          : [Number(productFilter)]
       try {
-        const result = await getVendedoresDaPraia(id, ids)
+        const result = await getVendedoresDaPraia(
+          id,
+          productFilter === ALL_PRODUCTS ? null : Number(productFilter)
+        )
         if (!cancelled) setVendors(result)
       } catch {
         if (!cancelled) setError("Não foi possível carregar os vendedores dessa praia.")
@@ -79,12 +78,27 @@ export function MapPage() {
       }
     }
 
-    loadVendors(beachId, products)
+    loadVendors(beachId)
 
     return () => {
       cancelled = true
     }
   }, [beachId, products, productFilter])
+
+  const markers = React.useMemo<MapMarker[]>(
+    () =>
+      vendors.map((vendor) => ({
+        id: vendor.id,
+        label: `${vendor.name} — ${vendor.featuredProduct.baseProductName}`,
+        lat: vendor.lat,
+        lng: vendor.lng,
+        photoUrl: vendor.featuredProduct.photoUrl,
+        // Verde = disponível, cinza = indisponível.
+        ringColor: vendor.available ? "#22c55e" : "#9ca3af",
+        dimmed: !vendor.available,
+      })),
+    [vendors]
+  )
 
   const selectedVendor = vendors.find((vendor) => vendor.id === selectedVendorId) ?? null
   const availableCount = vendors.filter((vendor) => vendor.available).length
@@ -96,11 +110,11 @@ export function MapPage() {
       <div className="relative min-h-0 flex-[4]">
         <div className="absolute inset-0">
           <MapboxMap
-            beach={beach}
-            vendors={vendors}
-            selectedVendorId={selectedVendorId}
-            onSelectVendor={setSelectedVendorId}
-            centerKey={`${beachId}:${productFilter}`}
+            center={beachCenter}
+            markers={markers}
+            selectedMarkerId={selectedVendorId}
+            onSelectMarker={setSelectedVendorId}
+            centerKey={String(beachId ?? "sem-praia")}
           />
         </div>
         {/* Fica dentro do container do mapa (abaixo do header) e deixa livre o canto direito,
@@ -170,12 +184,23 @@ export function MapPage() {
               ))}
             </ul>
 
-            <Button className="w-full bg-brand-orange text-white hover:bg-brand-orange/90">
+            <Button
+              className="w-full bg-brand-orange text-white hover:bg-brand-orange/90"
+              onClick={() => setIsVendorProductsModalOpen(true)}
+            >
               Tô Querendo
             </Button>
           </div>
         )}
       </div>
+
+      {selectedVendor && (
+        <VendorProductsModal
+          vendor={selectedVendor}
+          open={isVendorProductsModalOpen}
+          onOpenChange={setIsVendorProductsModalOpen}
+        />
+      )}
     </div>
   )
 }
