@@ -1,4 +1,4 @@
-import { Home, MapPin, ShieldCheck, ShoppingBag, Store, UserRound } from "lucide-react"
+import { Home, MapPin, ShieldCheck, ShoppingBag, UserRound } from "lucide-react"
 import { NavLink } from "react-router-dom"
 
 import { useAuth } from "@/hooks/use-auth"
