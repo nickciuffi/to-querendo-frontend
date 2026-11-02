@@ -13,6 +13,8 @@ interface ApiEnvelope<T> {
 interface VendedorLocalizacaoResponse {
   idVendedor: number
   nomeVendedor: string
+  urlFotoPerfil?: string | null
+  descricao?: string | null
   produtos: ProdutoEspecificoResponse[]
   latitude: number
   longitude: number
@@ -23,24 +25,32 @@ function isSellable(product: SellerProduct) {
 }
 
 /**
- * Busca os vendedores da praia. Com `idProdutoBase` nulo, a rota devolve os
- * vendedores de todos os produtos; caso contrário, só os do produto informado.
+ * Busca os vendedores da praia. Com `idsProdutoBase` nulo (ou vazio), a rota devolve os
+ * vendedores de todos os produtos; caso contrário, os que vendem qualquer um dos produtos
+ * informados (vão em `idsProdutosBase`, separados por vírgula: "1,2,4,5").
+ *
+ * Atenção: se algum id não for de um produto base ativo, a API responde 404 para a busca inteira.
  */
 export async function getVendedoresDaPraia(
   idPraia: number,
-  idProdutoBase: number | null
+  idsProdutoBase: number[] | null
 ): Promise<MapVendor[]> {
-  const params = new URLSearchParams({ idPraia: String(idPraia) })
-  if (idProdutoBase !== null) params.set("idProdutoBase", String(idProdutoBase))
+  let query = `idPraia=${idPraia}`
+  // Ids numéricos separados por vírgula literal ("1,2,4,5"), sem o %2C do URLSearchParams.
+  if (idsProdutoBase && idsProdutoBase.length > 0) {
+    query += `&idsProdutosBase=${idsProdutoBase.join(",")}`
+  }
 
   const { response } = await apiFetch<ApiEnvelope<VendedorLocalizacaoResponse[]>>(
-    `/vendedor/localizacao?${params}`
+    `/vendedor/localizacao?${query}`
   )
 
   return response
     .map((body) => ({
       id: body.idVendedor,
       name: body.nomeVendedor,
+      photoUrl: body.urlFotoPerfil || null,
+      description: body.descricao?.trim() ?? "",
       lat: body.latitude,
       lng: body.longitude,
       products: body.produtos.map(mapProdutoEspecifico),

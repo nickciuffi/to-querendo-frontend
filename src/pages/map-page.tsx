@@ -1,18 +1,26 @@
 import * as React from "react"
-import { MapPin } from "lucide-react"
+import { Package, Store } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ImageLightbox } from "@/components/image-lightbox"
+import { MapDetailsPanel } from "@/components/map-details-panel"
+import { MapStatusPill } from "@/components/map-status-pill"
 import { MapboxMap } from "@/components/mapbox-map"
+import { ProfileAvatar } from "@/components/profile-avatar"
 import { VendorProductsModal } from "@/components/vendor-products-modal"
 import { useAuth } from "@/hooks/use-auth"
 import { getBeachCenter } from "@/lib/coordinates"
-import { ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
+import { ACTIVE_ORDERS, ALL_PRODUCTS, ProductFilterSelect } from "@/components/product-filter-select"
 import type { MapMarker, MapVendor, Product } from "@/lib/types"
 import { getProdutosByPraia } from "@/services/product-service"
+import { getMinhasIntencoes } from "@/services/purchase-intention-service"
 import { getVendedoresDaPraia } from "@/services/vendor-location-service"
 
 const priceFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+
+// Chave da busca de vendedores sem filtro de produto (todos os produtos da praia).
+const ALL_VENDORS_KEY = "todos"
 
 export function MapPage() {
   const { user } = useAuth()
@@ -23,7 +31,11 @@ export function MapPage() {
   const [loadedVendors, setVendors] = React.useState<MapVendor[]>([])
   const vendors = React.useMemo(() => (beachId ? loadedVendors : []), [beachId, loadedVendors])
   const [products, setProducts] = React.useState<Product[] | null>(null)
-  const [productFilter, setProductFilter] = React.useState(ALL_PRODUCTS)
+  const [productFilter, setProductFilter] = React.useState(ACTIVE_ORDERS)
+  // Produtos base das intenções de compra ativas do usuário (null = ainda carregando).
+  const [activeOrderProductIds, setActiveOrderProductIds] = React.useState<number[] | null>(null)
+  const [ordersError, setOrdersError] = React.useState<string | null>(null)
+  const [ordersReloadKey, setOrdersReloadKey] = React.useState(0)
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [selectedVendorId, setSelectedVendorId] = React.useState<number | null>(null)
@@ -37,7 +49,7 @@ export function MapPage() {
 
     async function loadProducts(id: number) {
       setProducts(null)
-      setProductFilter(ALL_PRODUCTS)
+      setProductFilter(ACTIVE_ORDERS)
       setError(null)
       try {
         const result = await getProdutosByPraia(id)
@@ -54,22 +66,60 @@ export function MapPage() {
     }
   }, [beachId])
 
-  // Vendedores: o valor do filtro vai no `idProdutoBase` da rota (nulo = todos os produtos da praia).
+  // Pedidos ativos: definem os produtos do filtro "Produtos com pedido ativo". São recarregados
+  // quando o modal do vendedor fecha, porque é por ele que se faz um pedido novo no mapa.
   React.useEffect(() => {
-    if (!beachId || !products) return
+    let cancelled = false
+
+    async function loadActiveOrders() {
+      try {
+        const intentions = await getMinhasIntencoes()
+        if (!cancelled) {
+          setActiveOrderProductIds([...new Set(intentions.map((intention) => intention.baseProductId))])
+          setOrdersError(null)
+        }
+      } catch {
+        if (!cancelled) setOrdersError("Não foi possível carregar seus pedidos.")
+      }
+    }
+
+    loadActiveOrders()
+
+    return () => {
+      cancelled = true
+    }
+  }, [ordersReloadKey])
+
+  // Produtos que vão na busca de vendedores. No filtro de pedidos ativos, só os produtos dos
+  // pedidos que estão entre os produtos ativos da praia: a API responde 404 para a busca inteira
+  // se receber algum produto base inativo. `null` = ainda não dá para buscar.
+  const vendorQueryKey = React.useMemo<string | null>(() => {
+    if (!products) return null
+    if (productFilter === ALL_PRODUCTS) return ALL_VENDORS_KEY
+    if (productFilter !== ACTIVE_ORDERS) return productFilter
+    if (!activeOrderProductIds) return null
+    const beachProductIds = new Set(products.map((product) => Number(product.id)))
+    return activeOrderProductIds.filter((id) => beachProductIds.has(id)).join(",")
+  }, [products, productFilter, activeOrderProductIds])
+
+  // Vendedores: os produtos do filtro vão no `idsProdutosBase` da rota.
+  React.useEffect(() => {
+    if (!beachId || vendorQueryKey === null) return
 
     let cancelled = false
 
-    async function loadVendors(id: number) {
-      setIsLoading(true)
+    async function loadVendors(id: number, queryKey: string) {
       setError(null)
       setVendors([])
       setSelectedVendorId(null)
+
+      const ids = queryKey === ALL_VENDORS_KEY ? null : queryKey.split(",").filter(Boolean).map(Number)
+      // Sem produto nenhum para filtrar, não chamamos a API: sem ids ela traria todos os vendedores.
+      if (ids && ids.length === 0) return
+
+      setIsLoading(true)
       try {
-        const result = await getVendedoresDaPraia(
-          id,
-          productFilter === ALL_PRODUCTS ? null : Number(productFilter)
-        )
+        const result = await getVendedoresDaPraia(id, ids)
         if (!cancelled) setVendors(result)
       } catch {
         if (!cancelled) setError("Não foi possível carregar os vendedores dessa praia.")
@@ -78,12 +128,12 @@ export function MapPage() {
       }
     }
 
-    loadVendors(beachId)
+    loadVendors(beachId, vendorQueryKey)
 
     return () => {
       cancelled = true
     }
-  }, [beachId, products, productFilter])
+  }, [beachId, vendorQueryKey])
 
   const markers = React.useMemo<MapMarker[]>(
     () =>
@@ -102,12 +152,38 @@ export function MapPage() {
 
   const selectedVendor = vendors.find((vendor) => vendor.id === selectedVendorId) ?? null
   const availableCount = vendors.filter((vendor) => vendor.available).length
+  const isActiveOrdersFilter = productFilter === ACTIVE_ORDERS
+  const isWaitingOrders = isActiveOrdersFilter && activeOrderProductIds === null && !ordersError
+
+  // Mensagem que flutua sobre o mapa enquanto nenhum vendedor está selecionado.
+  function getStatus(): { title: string; description?: string; tone?: "error" } {
+    if (isLoading || isWaitingOrders) return { title: "Buscando vendedores..." }
+    if (error) return { title: error, tone: "error" }
+    if (!beachId) return { title: "Escolha uma praia para ver os vendedores" }
+    if (isActiveOrdersFilter && ordersError) return { title: ordersError, tone: "error" }
+    if (isActiveOrdersFilter && activeOrderProductIds?.length === 0) {
+      return {
+        title: "Você não tem pedidos ativos",
+        description: "Faça um pedido ou escolha outro filtro para ver os vendedores",
+      }
+    }
+    if (isActiveOrdersFilter && vendors.length === 0) {
+      return { title: "Nenhum vendedor dos produtos dos seus pedidos nessa praia" }
+    }
+    if (vendors.length === 0) return { title: "Nenhum vendedor encontrado nessa praia" }
+    return {
+      title: "Toque em um vendedor no mapa",
+      description: `${availableCount} ${availableCount === 1 ? "vendedor disponível" : "vendedores disponíveis"} na praia`,
+    }
+  }
+  const status = getStatus()
 
   return (
     <div className="flex flex-1 flex-col">
       {/* O layout só tem altura mínima, então o mapa fica em posição absoluta para ter
-          uma altura definida — o Mapbox não desenha em container com altura 0. */}
-      <div className="relative min-h-0 flex-[4]">
+          uma altura definida — o Mapbox não desenha em container com altura 0. Sem painel de
+          detalhes aberto, o mapa ocupa todo o espaço. */}
+      <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
           <MapboxMap
             center={beachCenter}
@@ -127,78 +203,123 @@ export function MapPage() {
             disabled={!beachId || products === null}
           />
         </div>
+        {!selectedVendor && (
+          <MapStatusPill
+            title={status.title}
+            description={status.description}
+            tone={status.tone}
+            className="left-3 top-14 w-[calc(100%-4.5rem)] max-w-xs"
+          />
+        )}
       </div>
 
-      <div className="flex-[1] min-h-[7.5rem] overflow-y-auto border-t border-border bg-card px-4 py-3">
-        {!selectedVendor && (
-          <div className="flex h-full flex-col items-center justify-center gap-1 text-center">
-            <MapPin className="size-5 text-brand-blue" />
-            {isLoading ? (
-              <p className="text-sm font-medium text-foreground">Buscando vendedores...</p>
-            ) : error ? (
-              <p className="text-sm font-medium text-destructive">{error}</p>
-            ) : !beachId ? (
-              <p className="text-sm font-medium text-foreground">Escolha uma praia para ver os vendedores</p>
-            ) : vendors.length === 0 ? (
-              <p className="text-sm font-medium text-foreground">Nenhum vendedor encontrado nessa praia</p>
-            ) : (
-              <>
-                <p className="text-sm font-medium text-foreground">Toque em um vendedor no mapa</p>
-                <p className="text-xs text-muted-foreground">
-                  {availableCount} {availableCount === 1 ? "vendedor disponível" : "vendedores disponíveis"} na praia
-                </p>
-              </>
-            )}
-          </div>
-        )}
+      {selectedVendor && (
+        <MapDetailsPanel
+          onClose={() => setSelectedVendorId(null)}
+          closeLabel="Fechar detalhes do vendedor"
+        >
+          <div className="flex min-h-0 flex-auto flex-col gap-3 pt-11">
+            {/* pt-11: faixa livre no topo para o X do painel. As colunas podem encolher (min-h-0)
+                para que, com muitos produtos, só a lista de produtos role. */}
+            <div className="flex min-h-0 flex-auto flex-col gap-3 sm:flex-row">
+              <section className="flex min-w-0 shrink-0 flex-col gap-2.5 rounded-xl border border-border bg-muted/40 p-3 sm:min-h-0 sm:flex-[2] sm:overflow-y-auto">
+                <div className="flex items-center gap-3">
+                  <ProfileAvatar name={selectedVendor.name} photoUrl={selectedVendor.photoUrl} />
+                  <div className="flex min-w-0 max-w-full flex-col items-start gap-1">
+                    <p className="max-w-full truncate font-heading text-base font-semibold text-foreground">
+                      {selectedVendor.name}
+                    </p>
+                    <Badge
+                      variant={selectedVendor.available ? "default" : "secondary"}
+                      className={selectedVendor.available ? "bg-brand-blue text-white" : ""}
+                    >
+                      {selectedVendor.available ? "Disponível" : "Indisponível"}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h3 className="flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Store className="size-3.5" />
+                    Sobre o negócio
+                  </h3>
+                  {selectedVendor.description ? (
+                    <p className="break-words text-xs text-foreground">{selectedVendor.description}</p>
+                  ) : (
+                    <p className="text-xs italic text-muted-foreground/70">Sem descrição</p>
+                  )}
+                </div>
+              </section>
 
-        {selectedVendor && (
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-heading text-sm font-semibold text-foreground">
-                  {selectedVendor.name}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
+              <section className="flex min-h-0 min-w-0 flex-auto flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3 sm:flex-[3]">
+                <h3 className="flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Package className="size-3.5" />
                   {selectedVendor.products.length}{" "}
                   {selectedVendor.products.length === 1 ? "produto" : "produtos"}
-                </p>
-              </div>
-              <Badge
-                variant={selectedVendor.available ? "default" : "secondary"}
-                className={selectedVendor.available ? "bg-brand-blue text-white" : ""}
-              >
-                {selectedVendor.available ? "Disponível" : "Indisponível"}
-              </Badge>
+                </h3>
+                <ul className="-mr-1.5 flex min-h-0 flex-auto flex-col gap-2 overflow-y-auto pr-1.5">
+                  {selectedVendor.products.map((product) => {
+                    const isSellable = product.active && product.baseProductActive
+                    return (
+                      <li
+                        key={product.id}
+                        className="flex gap-2.5 rounded-lg border border-border bg-card p-2"
+                      >
+                        {product.photoUrl ? (
+                          <ImageLightbox
+                            src={product.photoUrl}
+                            alt={product.name}
+                            className="size-12 shrink-0 rounded-md"
+                          />
+                        ) : (
+                          <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                            <Package className="size-5" />
+                          </span>
+                        )}
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="min-w-0 break-words text-xs font-medium text-foreground">
+                              {product.name}
+                            </p>
+                            <span className="shrink-0 text-xs font-semibold text-brand-orange">
+                              {priceFormatter.format(product.price)}
+                            </span>
+                          </div>
+                          {product.description && (
+                            <p className="line-clamp-2 text-[0.7rem] text-muted-foreground">
+                              {product.description}
+                            </p>
+                          )}
+                          {!isSellable && (
+                            <Badge variant="secondary" className="mt-0.5">
+                              Indisponível
+                            </Badge>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
             </div>
 
-            <ul className="flex flex-col gap-1.5">
-              {selectedVendor.products.map((product) => (
-                <li key={product.id} className="flex items-center gap-2 text-xs">
-                  <span className="min-w-0 flex-1 truncate text-foreground">{product.name}</span>
-                  <span className="text-muted-foreground">{priceFormatter.format(product.price)}</span>
-                  {!(product.active && product.baseProductActive) && (
-                    <Badge variant="secondary">Indisponível</Badge>
-                  )}
-                </li>
-              ))}
-            </ul>
-
             <Button
-              className="w-full bg-brand-orange text-white hover:bg-brand-orange/90"
+              className="w-full shrink-0 bg-brand-orange text-white hover:bg-brand-orange/90"
               onClick={() => setIsVendorProductsModalOpen(true)}
             >
               Tô Querendo
             </Button>
           </div>
-        )}
-      </div>
+        </MapDetailsPanel>
+      )}
 
       {selectedVendor && (
         <VendorProductsModal
           vendor={selectedVendor}
           open={isVendorProductsModalOpen}
-          onOpenChange={setIsVendorProductsModalOpen}
+          onOpenChange={(open) => {
+            setIsVendorProductsModalOpen(open)
+            if (!open) setOrdersReloadKey((key) => key + 1)
+          }}
         />
       )}
     </div>

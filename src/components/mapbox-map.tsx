@@ -98,7 +98,13 @@ export function MapboxMap({
     appliedStyleRef.current = mapStyle
     setMap(instance)
 
+    // O Mapbox só se ajusta sozinho quando a janela muda de tamanho. Aqui o contêiner também muda
+    // quando o painel abaixo do mapa cresce ou diminui, então redimensionamos o canvas junto.
+    const resizeObserver = new ResizeObserver(() => instance.resize())
+    resizeObserver.observe(containerRef.current)
+
     return () => {
+      resizeObserver.disconnect()
       instance.remove()
       setMap(null)
     }

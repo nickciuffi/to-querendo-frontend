@@ -30,6 +30,7 @@ export function SellerOnlineFloatingButton() {
   }
 
   return (
+     isOnline ||
     <FloatingButton onClick={handleToggle} disabled={isSaving} aria-pressed={isOnline}>
       <span className="relative flex size-5 items-center justify-center">
         <Power className="size-5" />
