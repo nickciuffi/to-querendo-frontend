@@ -1,31 +1,17 @@
 import * as React from "react"
-import { LogOut } from "lucide-react"
-import { useNavigate } from "react-router-dom"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BeachSelect } from "@/components/beach-select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { BeachBuyerIntentionsSection } from "@/components/vendedor/beach-buyer-intentions-section"
 import { InstructionsSection } from "@/components/instructions-section"
 import { ProductCard } from "@/components/product-card"
 import { useAuth } from "@/hooks/use-auth"
 import { getProdutosByPraia } from "@/services/product-service"
 import type { Product } from "@/lib/types"
-import { Header } from "@/components/layout/header"
 import { BecomeSellerFloatingButton } from "@/components/vendedor/become-seller-floating-button"
 import { SellerOnlineFloatingButton } from "@/components/vendedor/seller-online-floating-button"
 
 export function HomePage() {
-  const { user, hasRole, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, hasRole } = useAuth()
   const isVendor = hasRole("ROLE_VENDEDOR")
 
   const beachId = user?.beach?.id

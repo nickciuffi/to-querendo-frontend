@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ImageOff, Users } from "lucide-react"
+import { ImageOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
