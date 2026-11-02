@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { ConcludeIntentionModal } from "@/components/conclude-intention-modal"
 import { PurchaseIntentionCard } from "@/components/purchase-intention-card"
 import { ApiError } from "@/services/http-client"
 import { getProdutosBaseAtivos } from "@/services/product-service"
@@ -11,6 +12,7 @@ export function PedidosPage() {
   const [productPhotosById, setProductPhotosById] = React.useState<Map<number, string | null>>(new Map())
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [intentionToConclude, setIntentionToConclude] = React.useState<PurchaseIntention | null>(null)
 
   React.useEffect(() => {
     let cancelled = false
@@ -57,6 +59,7 @@ export function PedidosPage() {
                 key={intention.id}
                 intention={intention}
                 baseProductPhotoUrl={productPhotosById.get(intention.baseProductId) ?? null}
+                onConclude={setIntentionToConclude}
               />
             ))}
           {!isLoading && !error && intentions.length === 0 && (
@@ -66,6 +69,17 @@ export function PedidosPage() {
           )}
         </div>
       </div>
+
+      <ConcludeIntentionModal
+        key={intentionToConclude?.id ?? "nenhum"}
+        intention={intentionToConclude}
+        onOpenChange={(open) => {
+          if (!open) setIntentionToConclude(null)
+        }}
+        onConcluded={(concluded) =>
+          setIntentions((current) => current.filter((item) => item.id !== concluded.id))
+        }
+      />
     </div>
   )
 }

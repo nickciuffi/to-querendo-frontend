@@ -22,7 +22,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { ApiError } from "@/services/http-client"
-import { deletePraia, getPraias } from "@/services/beach-service"
+import { deletePraia, getTodasPraias } from "@/services/beach-service"
 import { deleteProdutoBase, getProdutosBase } from "@/services/product-service"
 import type { Product, UserBeach } from "@/lib/types"
 
@@ -56,7 +56,7 @@ export function AdminPage() {
 
     setIsLoadingBeaches(true)
     setBeachesError(null)
-    getPraias()
+    getTodasPraias()
       .then((result) => {
         if (!cancelled) setBeaches(result)
       })

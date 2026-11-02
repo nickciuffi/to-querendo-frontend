@@ -13,9 +13,14 @@ import type { Product } from "@/lib/types"
 /** Valor do filtro que representa "todos os produtos" (nenhum `idProdutoBase` específico). */
 export const ALL_PRODUCTS = "all"
 
+/** Valor do filtro que mostra só os produtos das intenções de compra ativas do usuário. */
+export const ACTIVE_ORDERS = "pedidos-ativos"
+
+const ACTIVE_ORDERS_LABEL = "Produtos com pedido ativo"
+
 interface ProductFilterSelectProps {
   products: Product[]
-  /** `ALL_PRODUCTS` ou o `id` (string) do produto base selecionado. */
+  /** `ACTIVE_ORDERS`, `ALL_PRODUCTS` ou o `id` (string) do produto base selecionado. */
   value: string
   onValueChange: (value: string) => void
   disabled?: boolean
@@ -45,13 +50,18 @@ export function ProductFilterSelect({
         <Package className="size-4 shrink-0 text-brand-blue" />
         <SelectValue placeholder="Todos os produtos" className="truncate">
           {(selected: string) =>
-            selected === ALL_PRODUCTS
-              ? "Todos os produtos"
-              : (products.find((p) => p.id === selected)?.name ?? selected)
+            selected === ACTIVE_ORDERS
+              ? ACTIVE_ORDERS_LABEL
+              : selected === ALL_PRODUCTS
+                ? "Todos os produtos"
+                : (products.find((p) => p.id === selected)?.name ?? selected)
           }
         </SelectValue>
       </SelectTrigger>
       <SelectContent className="min-w-56" sideOffset={6}>
+        <SelectItem value={ACTIVE_ORDERS} className="py-2 text-sm">
+          {ACTIVE_ORDERS_LABEL}
+        </SelectItem>
         <SelectItem value={ALL_PRODUCTS} className="py-2 text-sm">
           Todos os produtos
         </SelectItem>

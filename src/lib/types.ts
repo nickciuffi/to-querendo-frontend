@@ -1,26 +1,11 @@
-export interface Beach {
-  id: string
-  name: string
-  city: string
-  center: [number, number]
-}
-
-export interface Vendor {
-  id: string
-  name: string
-  avatarEmoji: string
-  rating: number
-  distanceMeters: number
-  lng: number
-  lat: number
-  isOpen: boolean
-  specialty: string
-}
-
 /** Vendedor da praia posicionado no mapa, com os produtos que ele vende. */
 export interface MapVendor {
   id: number
   name: string
+  /** Foto de perfil do vendedor (`urlFotoPerfil`); `null` se ele não tiver. */
+  photoUrl: string | null
+  /** Descrição do negócio do vendedor; vazia se ele não escreveu nenhuma. */
+  description: string
   lat: number
   lng: number
   products: SellerProduct[]
@@ -50,6 +35,8 @@ export interface MapMarker {
 export interface BuyerWithIntentions {
   id: number
   name: string
+  /** Foto de perfil do banhista (`urlFotoPerfil`); `null` se ele não tiver. */
+  photoUrl: string | null
   intentions: PurchaseIntention[]
 }
 
@@ -67,6 +54,11 @@ export interface UserBeach {
   name: string
   city: string
   state: string
+  /** Centro da praia. Ausente em praias antigas ainda sem coordenadas. */
+  latitude?: number | null
+  longitude?: number | null
+  /** Distância até o usuário em km. Só vem em GET /praia/proximas. */
+  distanceKm?: number | null
 }
 
 export interface UserCategory {

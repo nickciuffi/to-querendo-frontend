@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react"
 
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { getProdutosBaseAtivos } from "@/services/product-service"
 import { createProdutoEspecifico } from "@/services/seller-product-service"
@@ -38,7 +41,7 @@ export function CreateSellerProductModal({
   const baseProductId = useId()
   const nameId = useId()
   const descriptionId = useId()
-  const photoUrlId = useId()
+  const photoId = useId()
   const priceId = useId()
 
   const [baseProducts, setBaseProducts] = useState<Product[]>([])
@@ -48,7 +51,7 @@ export function CreateSellerProductModal({
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [photoUrl, setPhotoUrl] = useState("")
+  const photo = useImageUpload("produtos-especificos")
   const [price, setPrice] = useState("")
   const [baseProductError, setBaseProductError] = useState(false)
   const [nameError, setNameError] = useState(false)
@@ -87,7 +90,7 @@ export function CreateSellerProductModal({
     setSelectedBaseId(null)
     setName("")
     setDescription("")
-    setPhotoUrl("")
+    photo.reset()
     setPrice("")
     setBaseProductError(false)
     setNameError(false)
@@ -113,18 +116,20 @@ export function CreateSellerProductModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // Upload antes de salvar: se falhar, o endpoint de criação/edição não é chamado.
+      const urlFoto = await photo.upload()
       const product = await createProdutoEspecifico({
         idProdutoBase: Number(selectedBase.id),
         nome: trimmedName,
         descricao: trimmedDescription || undefined,
-        urlFoto: photoUrl.trim() || undefined,
+        urlFoto,
         preco: parsePrice(price),
       })
       onCreated(product)
       onOpenChange(false)
       resetForm()
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Não foi possível adicionar o produto.")
+      setSubmitError(err instanceof ApiError || err instanceof ImageUploadError ? err.message : "Não foi possível adicionar o produto.")
     } finally {
       setIsSubmitting(false)
     }
@@ -244,16 +249,13 @@ export function CreateSellerProductModal({
             )
           )}
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={photoUrlId}>URL da foto: (opcional)</Label>
-          <Input
-            id={photoUrlId}
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
-            placeholder="https://..."
-            inputMode="url"
-          />
-        </div>
+        <ImageFileInput
+          id={photoId}
+          label="Foto: (opcional)"
+          file={photo.file}
+          onFileChange={photo.setFile}
+          disabled={isSubmitting}
+        />
         {submitError && <span className="text-xs text-destructive">{submitError}</span>}
 
         <DialogFooter>
@@ -261,7 +263,7 @@ export function CreateSellerProductModal({
             Cancelar
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Adicionando..." : "Adicionar"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Adicionando..." : "Adicionar"}
           </Button>
         </DialogFooter>
       </DialogContent>

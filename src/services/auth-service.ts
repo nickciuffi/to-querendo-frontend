@@ -15,7 +15,15 @@ interface UsuarioMeusDadosResponse {
   telefone: string | null
   cpf: string | null
   urlFoto: string | null
-  praiaAtual: { id: number; nome: string; cidade: string; estado: string } | null
+  praiaAtual: {
+    id: number
+    nome: string
+    cidade: string
+    estado: string
+    /** Centro da praia; omitido em praias ainda sem coordenadas. */
+    latitude?: number | null
+    longitude?: number | null
+  } | null
   categoria: { id: number; descricao: string } | null
   descricao: string,
   online: boolean,
@@ -34,6 +42,8 @@ function mapUsuario(body: UsuarioMeusDadosResponse): AuthUser {
           name: body.praiaAtual.nome,
           city: body.praiaAtual.cidade,
           state: body.praiaAtual.estado,
+          latitude: body.praiaAtual.latitude ?? null,
+          longitude: body.praiaAtual.longitude ?? null,
         }
       : null,
     category: body.categoria

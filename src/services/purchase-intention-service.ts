@@ -49,6 +49,7 @@ function mapIntencaoCompra(body: IntencaoCompraResponse): PurchaseIntention {
 interface BanhistaIntencaoResponse {
   idUsuario: number
   nomeUsuario: string
+  urlFotoPerfil?: string | null
   intencoesCompra: IntencaoCompraResponse[]
 }
 
@@ -61,6 +62,7 @@ export async function getBanhistasComIntencao(): Promise<BuyerWithIntentions[]> 
     .map((body) => ({
       id: body.idUsuario,
       name: body.nomeUsuario,
+      photoUrl: body.urlFotoPerfil || null,
       intentions: (body.intencoesCompra ?? []).map(mapIntencaoCompra),
     }))
     .filter((buyer) => buyer.intentions.length > 0)
@@ -71,4 +73,21 @@ export async function getMinhasIntencoes(): Promise<PurchaseIntention[]> {
     "/intencao-compra/minhas-intencoes"
   )
   return response.map(mapIntencaoCompra)
+}
+
+export interface ConcludePurchaseIntentionPayload {
+  idProdutoBase: number
+  /** Texto livre de até 200 caracteres (a API só exige que não seja vazio). */
+  motivo: string
+}
+
+/**
+ * Conclui a intenção de compra ativa do usuário para o produto base. A API não apaga o registro:
+ * ela marca a intenção como inativa e guarda o motivo e a data da conclusão.
+ */
+export async function concludePurchaseIntention(payload: ConcludePurchaseIntentionPayload): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>("/intencao-compra", {
+    method: "DELETE",
+    body: payload,
+  })
 }

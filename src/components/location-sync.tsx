@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useGeolocation, type GeolocationPosition } from "@/hooks/use-geolocation"
 import { updateLocalizacao } from "@/services/localizacao-service"
 
-const SEND_INTERVAL_MS = 10_000
+const SEND_INTERVAL_MS = 30_000
 
 /**
  * Envia a localização do usuário logado para a API a cada 10 segundos.

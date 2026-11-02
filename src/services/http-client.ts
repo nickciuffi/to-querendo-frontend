@@ -25,8 +25,12 @@ export class ApiError extends Error {
 export async function apiFetch<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const { auth = true, body, headers, ...rest } = options
 
+  // Com FormData (upload de arquivo), o navegador define sozinho o
+  // `multipart/form-data; boundary=...`; por isso não fixamos o Content-Type.
+  const isFormData = body instanceof FormData
+
   const finalHeaders = new Headers(headers)
-  finalHeaders.set("Content-Type", "application/json")
+  if (!isFormData) finalHeaders.set("Content-Type", "application/json")
 
   if (auth) {
     for (const [key, value] of Object.entries(getAuthHeader())) {
@@ -37,7 +41,7 @@ export async function apiFetch<T>(path: string, options: ApiRequestOptions = {})
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
     headers: finalHeaders,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
   })
 
   if (!response.ok) {

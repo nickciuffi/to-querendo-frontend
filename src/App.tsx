@@ -9,6 +9,7 @@ import { LoginPage } from "@/pages/login-page"
 import { AdminPage } from "@/pages/admin/admin-page"
 import { UsuarioPage } from "@/pages/usuario-page"
 import { PedidosPage } from "@/pages/pedidos-page"
+import { LandingPage } from "@/pages/landing-page"
 
 import { useAuth } from "@/hooks/use-auth"
 
@@ -26,6 +27,7 @@ function MapRoute() {
 function App() {
   return (
     <Routes>
+      <Route path="/hello" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
       <Route element={<ProtectedRoute />}>

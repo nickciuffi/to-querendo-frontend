@@ -1,4 +1,4 @@
-import { MapPin, Pencil, Trash2 } from "lucide-react"
+import { MapPin, Pencil, Trash2, TriangleAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,6 +13,8 @@ export function BeachCard({
   onEdit: (beach: UserBeach) => void
   onDelete: (beach: UserBeach) => void
 }) {
+  const hasCoordinates = beach.latitude != null && beach.longitude != null
+
   return (
     <Card className="gap-2 rounded-xl border-2 border-white/10 bg-[#0F172A] ring-0">
       <CardContent className="flex items-start gap-3">
@@ -26,6 +28,11 @@ export function BeachCard({
           <p className="truncate text-xs text-white/60">
             {beach.city}, {beach.state}
           </p>
+          {hasCoordinates && (
+            <p className="mt-1 truncate text-[0.65rem] text-white/40">
+              {beach.latitude}, {beach.longitude}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <Button
@@ -48,6 +55,12 @@ export function BeachCard({
           </Button>
         </div>
       </CardContent>
+      {!hasCoordinates && (
+        <p className="flex items-start gap-1.5 px-4 text-xs text-amber-400">
+          <TriangleAlert className="mt-px size-3.5 shrink-0" />
+          Sem coordenadas — não aparece para os usuários
+        </p>
+      )}
     </Card>
   )
 }
