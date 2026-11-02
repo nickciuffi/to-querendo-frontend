@@ -1,5 +1,6 @@
 import { useId, useState } from "react"
 
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { isLatitudeValid, isLongitudeValid, parseCoordinate } from "@/lib/coordinates"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { createPraia } from "@/services/beach-service"
 import type { UserBeach } from "@/lib/types"
@@ -29,14 +32,14 @@ export function CreateBeachModal({
   const nameId = useId()
   const cityId = useId()
   const stateId = useId()
-  const photoUrlId = useId()
+  const photoId = useId()
   const latitudeId = useId()
   const longitudeId = useId()
 
   const [name, setName] = useState("")
   const [city, setCity] = useState("")
   const [state, setState] = useState("")
-  const [photoUrl, setPhotoUrl] = useState("")
+  const photo = useImageUpload("praias")
   const [latitude, setLatitude] = useState("")
   const [longitude, setLongitude] = useState("")
   const [nameError, setNameError] = useState(false)
@@ -51,7 +54,7 @@ export function CreateBeachModal({
     setName("")
     setCity("")
     setState("")
-    setPhotoUrl("")
+    photo.reset()
     setLatitude("")
     setLongitude("")
     setNameError(false)
@@ -92,20 +95,22 @@ export function CreateBeachModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // Upload antes de salvar: se falhar, o endpoint de criação/edição não é chamado.
+      const urlFoto = await photo.upload()
       const beach = await createPraia({
         nome: trimmedName,
         cidade: trimmedCity,
         estado: trimmedState.toUpperCase(),
         latitude: parsedLatitude,
         longitude: parsedLongitude,
-        urlFoto: photoUrl.trim() || undefined,
+        urlFoto,
       })
       onCreated(beach)
       onOpenChange(false)
       resetForm()
     } catch (err) {
       setSubmitError(
-        err instanceof ApiError ? err.message : "Não foi possível criar a praia."
+        err instanceof ApiError || err instanceof ImageUploadError ? err.message : "Não foi possível criar a praia."
       )
     } finally {
       setIsSubmitting(false)
@@ -216,15 +221,13 @@ export function CreateBeachModal({
         <p className="-mt-2 text-xs text-muted-foreground">
           Use o centro da praia. A distância até os usuários é calculada a partir desse ponto.
         </p>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={photoUrlId}>URL da foto: (opcional)</Label>
-          <Input
-            id={photoUrlId}
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
-            placeholder="https://..."
-          />
-        </div>
+        <ImageFileInput
+          id={photoId}
+          label="Foto: (opcional)"
+          file={photo.file}
+          onFileChange={photo.setFile}
+          disabled={isSubmitting}
+        />
         {submitError && (
           <span className="text-xs text-destructive">{submitError}</span>
         )}
@@ -234,7 +237,7 @@ export function CreateBeachModal({
             Cancelar
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Criando..." : "Criar"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Criando..." : "Criar"}
           </Button>
         </DialogFooter>
       </DialogContent>

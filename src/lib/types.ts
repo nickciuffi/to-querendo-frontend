@@ -2,6 +2,10 @@
 export interface MapVendor {
   id: number
   name: string
+  /** Foto de perfil do vendedor (`urlFotoPerfil`); `null` se ele não tiver. */
+  photoUrl: string | null
+  /** Descrição do negócio do vendedor; vazia se ele não escreveu nenhuma. */
+  description: string
   lat: number
   lng: number
   products: SellerProduct[]
@@ -31,6 +35,8 @@ export interface MapMarker {
 export interface BuyerWithIntentions {
   id: number
   name: string
+  /** Foto de perfil do banhista (`urlFotoPerfil`); `null` se ele não tiver. */
+  photoUrl: string | null
   intentions: PurchaseIntention[]
 }
 

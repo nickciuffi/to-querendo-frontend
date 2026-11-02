@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react"
 
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { getProdutosBaseAtivos } from "@/services/product-service"
 import { updateProdutoEspecifico } from "@/services/seller-product-service"
@@ -36,13 +39,15 @@ export function EditSellerProductModal({
   const nameId = useId()
   const descriptionId = useId()
   const priceId = useId()
-  const photoUrlId = useId()
+  const photoId = useId()
   const activeId = useId()
 
   const [name, setName] = useState(product?.name ?? "")
   const [description, setDescription] = useState(product?.description ?? "")
   const [price, setPrice] = useState(product ? product.price.toFixed(2) : "")
-  const [photoUrl, setPhotoUrl] = useState(product?.photoUrl ?? "")
+  const photo = useImageUpload("produtos-especificos")
+  // "Remover foto" só apaga a foto atual ao salvar; até lá dá para desfazer.
+  const [removeCurrentPhoto, setRemoveCurrentPhoto] = useState(false)
   const [active, setActive] = useState(product?.active ?? true)
   const [minPrice, setMinPrice] = useState<number | null>(null)
   const [nameError, setNameError] = useState(false)
@@ -84,17 +89,25 @@ export function EditSellerProductModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // Upload antes de salvar: se falhar, o produto não é alterado. Sem arquivo novo, a foto
+      // só muda se o vendedor pediu para removê-la (`""`); senão o campo é omitido e a API a mantém.
+      const uploadedUrl = await photo.upload()
+      const urlFoto = uploadedUrl ?? (removeCurrentPhoto ? "" : undefined)
       const updated = await updateProdutoEspecifico(product.id, {
         nome: trimmedName,
         descricao: description.trim(),
-        urlFoto: photoUrl.trim(),
+        urlFoto,
         preco: parsePrice(price),
         produtoAtivo: active,
       })
       onUpdated(updated)
       onOpenChange(false)
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Não foi possível salvar o produto.")
+      setSubmitError(
+        err instanceof ApiError || err instanceof ImageUploadError
+          ? err.message
+          : "Não foi possível salvar o produto."
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -162,14 +175,30 @@ export function EditSellerProductModal({
           )}
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={photoUrlId}>URL da foto: (opcional)</Label>
-          <Input
-            id={photoUrlId}
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
-            placeholder="https://..."
-            inputMode="url"
+          <ImageFileInput
+            id={photoId}
+            label="Foto: (opcional)"
+            file={photo.file}
+            onFileChange={photo.setFile}
+            currentImageUrl={removeCurrentPhoto ? null : product?.photoUrl}
+            onRemoveCurrent={product?.photoUrl ? () => setRemoveCurrentPhoto(true) : undefined}
+            disabled={isSubmitting}
           />
+          {removeCurrentPhoto && !photo.file && (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              A foto atual será removida ao salvar.
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                onClick={() => setRemoveCurrentPhoto(false)}
+                disabled={isSubmitting}
+              >
+                Desfazer
+              </Button>
+            </p>
+          )}
         </div>
         <Label htmlFor={activeId} className="cursor-pointer">
           <input
@@ -188,7 +217,7 @@ export function EditSellerProductModal({
             Cancelar
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Salvando..." : "Salvar"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>

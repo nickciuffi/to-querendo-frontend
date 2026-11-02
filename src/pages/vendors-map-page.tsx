@@ -1,12 +1,17 @@
 import * as React from "react"
-import { MapPin } from "lucide-react"
+import { MapPin, ShoppingBag } from "lucide-react"
 
+import { ImageLightbox } from "@/components/image-lightbox"
+import { MapDetailsPanel } from "@/components/map-details-panel"
+import { MapStatusPill } from "@/components/map-status-pill"
 import { MapboxMap } from "@/components/mapbox-map"
+import { ProfileAvatar } from "@/components/profile-avatar"
+import { INTENTION_PHOTO_FALLBACK_URL } from "@/components/vendedor/buyer-intention-card"
 import { SellerOnlineFloatingButton } from "@/components/vendedor/seller-online-floating-button"
 import { useAuth } from "@/hooks/use-auth"
 import { getBeachCenter } from "@/lib/coordinates"
 import type { BuyerWithIntentions, MapMarker } from "@/lib/types"
-import { getInitials } from "@/lib/utils"
+import { formatDateTimeBR, getInitials } from "@/lib/utils"
 import { getBanhistasComIntencao } from "@/services/purchase-intention-service"
 
 const BUYER_RING_COLOR = "#FC800C"
@@ -62,17 +67,35 @@ export function VendorsMapPage() {
       id: buyer.id,
       label: `${buyer.name} — ${buyer.intentions[0].baseProductName}`,
       ...provisionalPosition([centerLng, centerLat], index),
-      photoUrl: buyer.intentions[0].photoUrl,
+      // Foto de perfil do banhista; sem foto, o pin mostra as iniciais.
+      photoUrl: buyer.photoUrl,
       initials: getInitials(buyer.name),
       ringColor: BUYER_RING_COLOR,
     }))
   }, [buyers, centerLng, centerLat])
 
   const selectedBuyer = buyers.find((buyer) => buyer.id === selectedBuyerId) ?? null
+  // A API devolve as intenções da mais recente para a mais antiga: a primeira tem o último local.
+  const lastIntention = selectedBuyer?.intentions[0] ?? null
+
+  // Mensagem que flutua sobre o mapa enquanto nenhum comprador está selecionado.
+  function getStatus(): { title: string; description?: string; tone?: "error" } {
+    if (isLoading) return { title: "Buscando banhistas..." }
+    if (error) return { title: error, tone: "error" }
+    if (!beachId) return { title: "Escolha uma praia para ver os banhistas" }
+    if (!beachCenter) return { title: "A localização da sua praia ainda não foi cadastrada" }
+    if (buyers.length === 0) return { title: "Nenhum banhista querendo comprar agora" }
+    return {
+      title: "Toque em um banhista no mapa",
+      description: `${buyers.length} ${buyers.length === 1 ? "banhista querendo comprar" : "banhistas querendo comprar"}`,
+    }
+  }
+  const status = getStatus()
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="relative min-h-0 flex-[4]">
+      {/* Sem painel de detalhes aberto, o mapa ocupa todo o espaço. */}
+      <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
           <MapboxMap
             center={beachCenter}
@@ -83,55 +106,75 @@ export function VendorsMapPage() {
             offlineStyle={!user?.online}
           />
         </div>
-      </div>
-
-      <div className="flex-[1] min-h-[7.5rem] overflow-y-auto border-t border-border bg-card px-4 py-3">
         {!selectedBuyer && (
-          <div className="flex h-full flex-col items-center justify-center gap-1 text-center">
-            <MapPin className="size-5 text-brand-blue" />
-            {isLoading ? (
-              <p className="text-sm font-medium text-foreground">Buscando banhistas...</p>
-            ) : error ? (
-              <p className="text-sm font-medium text-destructive">{error}</p>
-            ) : !beachId ? (
-              <p className="text-sm font-medium text-foreground">Escolha uma praia para ver os banhistas</p>
-            ) : !beachCenter ? (
-              <p className="text-sm font-medium text-foreground">
-                A localização da sua praia ainda não foi cadastrada
-              </p>
-            ) : buyers.length === 0 ? (
-              <p className="text-sm font-medium text-foreground">Nenhum banhista querendo comprar agora</p>
-            ) : (
-              <>
-                <p className="text-sm font-medium text-foreground">Toque em um banhista no mapa</p>
-                <p className="text-xs text-muted-foreground">
-                  {buyers.length} {buyers.length === 1 ? "banhista querendo comprar" : "banhistas querendo comprar"}
-                </p>
-              </>
-            )}
-          </div>
-        )}
-
-        {selectedBuyer && (
-          <div className="flex flex-col gap-2.5">
-            <p className="truncate font-heading text-sm font-semibold text-foreground">
-              {selectedBuyer.name}
-            </p>
-
-            <ul className="flex flex-col gap-2">
-              {selectedBuyer.intentions.map((intention) => (
-                <li key={intention.id} className="flex flex-col gap-0.5 text-xs">
-                  <span className="font-medium text-foreground">{intention.baseProductName}</span>
-                  <span className="text-muted-foreground">{intention.locationDescription}</span>
-                  {intention.observations && (
-                    <span className="text-muted-foreground">{intention.observations}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <MapStatusPill
+            title={status.title}
+            description={status.description}
+            tone={status.tone}
+            className="left-3 top-3 w-[calc(100%-4.5rem)] max-w-xs"
+          />
         )}
       </div>
+
+      {selectedBuyer && lastIntention && (
+        <MapDetailsPanel
+          onClose={() => setSelectedBuyerId(null)}
+          closeLabel="Fechar detalhes do comprador"
+        >
+          <div className="flex flex-col gap-3">
+            {/* pr-12: o X do painel fica à direita desta linha. */}
+            <header className="flex items-center gap-3 pr-12">
+              <ProfileAvatar name={selectedBuyer.name} photoUrl={selectedBuyer.photoUrl} />
+              <div className="min-w-0">
+                <p className="truncate font-heading text-base font-semibold text-foreground">
+                  {selectedBuyer.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedBuyer.intentions.length}{" "}
+                  {selectedBuyer.intentions.length === 1 ? "pedido ativo" : "pedidos ativos"}
+                </p>
+              </div>
+            </header>
+
+            <div className="grid grid-cols-2 gap-3">
+              <section className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3">
+                <h3 className="flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <ShoppingBag className="size-3.5" />
+                  Quer comprar
+                </h3>
+                <ul className="flex flex-col divide-y divide-border">
+                  {selectedBuyer.intentions.map((intention) => (
+                    <li key={intention.id} className="flex flex-col gap-0.5 py-1.5 text-xs first:pt-0 last:pb-0">
+                      <span className="font-medium text-foreground">{intention.baseProductName}</span>
+                      {intention.observations ? (
+                        <span className="break-words text-muted-foreground">{intention.observations}</span>
+                      ) : (
+                        <span className="italic text-muted-foreground/70">Sem observações</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3">
+                <h3 className="flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <MapPin className="size-3.5" />
+                  Último local
+                </h3>
+                <ImageLightbox
+                  src={lastIntention.photoUrl || INTENTION_PHOTO_FALLBACK_URL}
+                  alt={`Local de ${selectedBuyer.name}`}
+                  className="aspect-[4/3] w-full max-w-56 sm:max-w-40"
+                />
+                <p className="break-words text-xs text-foreground">{lastIntention.locationDescription}</p>
+                <span className="text-[0.65rem] text-muted-foreground">
+                  Atualizado em {formatDateTimeBR(lastIntention.createdAt)}
+                </span>
+              </section>
+            </div>
+          </div>
+        </MapDetailsPanel>
+      )}
 
       <SellerOnlineFloatingButton />
     </div>

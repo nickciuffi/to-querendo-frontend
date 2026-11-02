@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react"
 
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { updateProdutoBase } from "@/services/product-service"
 import type { Product } from "@/lib/types"
@@ -29,13 +32,13 @@ export function EditProductBaseModal({
   const nameId = useId()
   const descriptionId = useId()
   const priceId = useId()
-  const photoUrlId = useId()
+  const photoId = useId()
   const activeId = useId()
 
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [minPrice, setMinPrice] = useState("")
-  const [photoUrl, setPhotoUrl] = useState("")
+  const photo = useImageUpload("produtos-base")
   const [active, setActive] = useState(true)
   const [nameError, setNameError] = useState(false)
   const [descriptionError, setDescriptionError] = useState(false)
@@ -43,19 +46,20 @@ export function EditProductBaseModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
+  const resetPhoto = photo.reset
   useEffect(() => {
     if (product) {
       setName(product.name)
       setDescription(product.description)
       setMinPrice(String(product.minPrice))
-      setPhotoUrl(product.photoUrl ?? "")
+      resetPhoto()
       setActive(product.active)
       setNameError(false)
       setDescriptionError(false)
       setPriceError(false)
       setSubmitError(null)
     }
-  }, [product])
+  }, [product, resetPhoto])
 
   async function handleConfirm() {
     if (!product) return
@@ -77,18 +81,20 @@ export function EditProductBaseModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // Upload antes de salvar: se falhar, o endpoint de criação/edição não é chamado.
+      const urlFoto = await photo.upload()
       const updated = await updateProdutoBase(product.id, {
         nome: trimmedName,
         descricao: trimmedDescription,
         precoMinimo: price,
         estaAtivo: active,
-        urlFoto: photoUrl.trim() || undefined,
+        urlFoto,
       })
       onUpdated(updated)
       onOpenChange(false)
     } catch (err) {
       setSubmitError(
-        err instanceof ApiError ? err.message : "Não foi possível salvar o produto base."
+        err instanceof ApiError || err instanceof ImageUploadError ? err.message : "Não foi possível salvar o produto base."
       )
     } finally {
       setIsSubmitting(false)
@@ -154,15 +160,14 @@ export function EditProductBaseModal({
             <span className="text-xs text-destructive">Informe um preço mínimo válido.</span>
           )}
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={photoUrlId}>URL da foto: (opcional)</Label>
-          <Input
-            id={photoUrlId}
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
-            placeholder="https://..."
-          />
-        </div>
+        <ImageFileInput
+          id={photoId}
+          label="Foto: (opcional)"
+          file={photo.file}
+          onFileChange={photo.setFile}
+          currentImageUrl={product?.photoUrl}
+          disabled={isSubmitting}
+        />
         <Label htmlFor={activeId} className="cursor-pointer">
           <input
             id={activeId}
@@ -182,7 +187,7 @@ export function EditProductBaseModal({
             Cancelar
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Salvando..." : "Salvar"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>

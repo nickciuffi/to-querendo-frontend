@@ -2,6 +2,7 @@ import * as React from "react"
 import { CheckCircle2, Plus } from "lucide-react"
 
 import { BeachSelect } from "@/components/beach-select"
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,6 +17,8 @@ import { BecomeSellerCard } from "@/components/vendedor/become-seller-card"
 import { CreateSellerProductModal } from "@/components/vendedor/create-seller-product-modal"
 import { SellerProductList } from "@/components/vendedor/seller-product-list"
 import { useAuth } from "@/hooks/use-auth"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { getCurrentUser, updateCurrentUser, type UpdateCurrentUserPayload } from "@/services/auth-service"
 
@@ -48,7 +51,7 @@ export function UsuarioPage() {
   const nameId = React.useId()
   const phoneId = React.useId()
   const cpfId = React.useId()
-  const photoUrlId = React.useId()
+  const photoId = React.useId()
   const beachId = React.useId()
   const onlineId = React.useId()
   const sellerDescriptionId = React.useId()
@@ -56,7 +59,7 @@ export function UsuarioPage() {
   const [name, setName] = React.useState(user?.name ?? "")
   const [phone, setPhone] = React.useState(formatPhone(user?.phone ?? ""))
   const [cpf, setCpf] = React.useState(formatCpf(user?.cpf ?? ""))
-  const [photoUrl, setPhotoUrl] = React.useState(user?.photoUrl ?? "")
+  const photo = useImageUpload("usuarios")
   const [idPraia, setIdPraia] = React.useState<number | null>(user?.beach?.id ?? null)
   const [online, setOnline] = React.useState(user?.online ?? false)
   const [sellerDescription, setSellerDescription] = React.useState(user?.description ?? "")
@@ -82,7 +85,7 @@ export function UsuarioPage() {
     name.trim() !== user.name ||
     onlyDigits(phone) !== (user.phone ?? "") ||
     onlyDigits(cpf) !== (user.cpf ?? "") ||
-    photoUrl.trim() !== (user.photoUrl ?? "") ||
+    photo.file !== null ||
     idPraia !== (user.beach?.id ?? null)
 
   async function handleSubmit(event: React.FormEvent) {
@@ -107,7 +110,6 @@ export function UsuarioPage() {
     const payload: UpdateCurrentUserPayload = { nome: trimmedName }
     if (phoneDigits) payload.telefone = phoneDigits
     if (cpfDigits) payload.cpf = cpfDigits
-    if (photoUrl.trim()) payload.urlFoto = photoUrl.trim()
     if (idPraia) payload.idPraia = idPraia
     if (isSeller) {
       payload.online = online
@@ -119,12 +121,21 @@ export function UsuarioPage() {
     setSubmitError(null)
     setSaved(false)
     try {
+      // Upload antes de salvar: se falhar, os dados não são enviados.
+      const urlFoto = await photo.upload()
+      if (urlFoto) payload.urlFoto = urlFoto
       await updateCurrentUser(payload)
       const refreshedUser = await getCurrentUser()
       updateUser(refreshedUser)
+      // A pré-visualização passa a mostrar a foto salva (user.photoUrl).
+      photo.reset()
       setSaved(true)
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Não foi possível salvar seus dados.")
+      setSubmitError(
+        err instanceof ApiError || err instanceof ImageUploadError
+          ? err.message
+          : "Não foi possível salvar seus dados."
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -199,20 +210,19 @@ export function UsuarioPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={photoUrlId} className="text-white/80">URL da foto</Label>
-            <Input
-              id={photoUrlId}
-              value={photoUrl}
-              onChange={(event) => {
-                setPhotoUrl(event.target.value)
-                setSaved(false)
-              }}
-              placeholder="https://..."
-              inputMode="url"
-              className={inputClassName}
-            />
-          </div>
+          <ImageFileInput
+            id={photoId}
+            label="Foto"
+            file={photo.file}
+            onFileChange={(file) => {
+              photo.setFile(file)
+              setSaved(false)
+            }}
+            currentImageUrl={user.photoUrl}
+            disabled={isSubmitting}
+            labelClassName="text-white/80"
+            inputClassName={`${inputClassName} file:text-white`}
+          />
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={beachId} className="text-white/80">Praia atual</Label>
@@ -294,7 +304,7 @@ export function UsuarioPage() {
             disabled={isSubmitting || !isDirty}
             className="h-10 w-full bg-[#FC800C] text-white hover:bg-[#FC800C]/90"
           >
-            {isSubmitting ? "Salvando..." : "Salvar alterações"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Salvando..." : "Salvar alterações"}
           </Button>
         </form>  
       </div>

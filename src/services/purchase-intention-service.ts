@@ -49,6 +49,7 @@ function mapIntencaoCompra(body: IntencaoCompraResponse): PurchaseIntention {
 interface BanhistaIntencaoResponse {
   idUsuario: number
   nomeUsuario: string
+  urlFotoPerfil?: string | null
   intencoesCompra: IntencaoCompraResponse[]
 }
 
@@ -61,6 +62,7 @@ export async function getBanhistasComIntencao(): Promise<BuyerWithIntentions[]> 
     .map((body) => ({
       id: body.idUsuario,
       name: body.nomeUsuario,
+      photoUrl: body.urlFotoPerfil || null,
       intentions: (body.intencoesCompra ?? []).map(mapIntencaoCompra),
     }))
     .filter((buyer) => buyer.intentions.length > 0)

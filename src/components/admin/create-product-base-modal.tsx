@@ -1,5 +1,6 @@
 import { useId, useState } from "react"
 
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { createProdutoBase } from "@/services/product-service"
 import type { Product } from "@/lib/types"
@@ -29,12 +32,12 @@ export function CreateProductBaseModal({
   const nameId = useId()
   const descriptionId = useId()
   const priceId = useId()
-  const photoUrlId = useId()
+  const photoId = useId()
 
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [minPrice, setMinPrice] = useState("")
-  const [photoUrl, setPhotoUrl] = useState("")
+  const photo = useImageUpload("produtos-base")
   const [nameError, setNameError] = useState(false)
   const [descriptionError, setDescriptionError] = useState(false)
   const [priceError, setPriceError] = useState(false)
@@ -45,7 +48,7 @@ export function CreateProductBaseModal({
     setName("")
     setDescription("")
     setMinPrice("")
-    setPhotoUrl("")
+    photo.reset()
     setNameError(false)
     setDescriptionError(false)
     setPriceError(false)
@@ -70,18 +73,20 @@ export function CreateProductBaseModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // Upload antes de salvar: se falhar, o endpoint de criação/edição não é chamado.
+      const urlFoto = await photo.upload()
       const product = await createProdutoBase({
         nome: trimmedName,
         descricao: trimmedDescription,
         precoMinimo: price,
-        urlFoto: photoUrl.trim() || undefined,
+        urlFoto,
       })
       onCreated(product)
       onOpenChange(false)
       resetForm()
     } catch (err) {
       setSubmitError(
-        err instanceof ApiError ? err.message : "Não foi possível criar o produto base."
+        err instanceof ApiError || err instanceof ImageUploadError ? err.message : "Não foi possível criar o produto base."
       )
     } finally {
       setIsSubmitting(false)
@@ -153,15 +158,13 @@ export function CreateProductBaseModal({
             <span className="text-xs text-destructive">Informe um preço mínimo válido.</span>
           )}
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={photoUrlId}>URL da foto: (opcional)</Label>
-          <Input
-            id={photoUrlId}
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
-            placeholder="https://..."
-          />
-        </div>
+        <ImageFileInput
+          id={photoId}
+          label="Foto: (opcional)"
+          file={photo.file}
+          onFileChange={photo.setFile}
+          disabled={isSubmitting}
+        />
         {submitError && (
           <span className="text-xs text-destructive">{submitError}</span>
         )}
@@ -171,7 +174,7 @@ export function CreateProductBaseModal({
             Cancelar
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Criando..." : "Criar"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Criando..." : "Criar"}
           </Button>
         </DialogFooter>
       </DialogContent>
