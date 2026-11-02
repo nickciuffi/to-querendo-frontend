@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react"
 
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { isLatitudeValid, isLongitudeValid, parseCoordinate } from "@/lib/coordinates"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { updatePraia } from "@/services/beach-service"
 import type { UserBeach } from "@/lib/types"
@@ -29,14 +32,14 @@ export function EditBeachModal({
   const nameId = useId()
   const cityId = useId()
   const stateId = useId()
-  const photoUrlId = useId()
+  const photoId = useId()
   const latitudeId = useId()
   const longitudeId = useId()
 
   const [name, setName] = useState("")
   const [city, setCity] = useState("")
   const [state, setState] = useState("")
-  const [photoUrl, setPhotoUrl] = useState("")
+  const photo = useImageUpload("praias")
   const [latitude, setLatitude] = useState("")
   const [longitude, setLongitude] = useState("")
   const [nameError, setNameError] = useState(false)
@@ -47,12 +50,13 @@ export function EditBeachModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
+  const resetPhoto = photo.reset
   useEffect(() => {
     if (beach) {
       setName(beach.name)
       setCity(beach.city)
       setState(beach.state)
-      setPhotoUrl("")
+      resetPhoto()
       setLatitude(beach.latitude != null ? String(beach.latitude) : "")
       setLongitude(beach.longitude != null ? String(beach.longitude) : "")
       setNameError(false)
@@ -62,7 +66,7 @@ export function EditBeachModal({
       setLongitudeError(false)
       setSubmitError(null)
     }
-  }, [beach])
+  }, [beach, resetPhoto])
 
   async function handleConfirm() {
     if (!beach) return
@@ -97,19 +101,21 @@ export function EditBeachModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // Upload antes de salvar: se falhar, o endpoint de criação/edição não é chamado.
+      const urlFoto = await photo.upload()
       const updated = await updatePraia(beach.id, {
         nome: trimmedName,
         cidade: trimmedCity,
         estado: trimmedState.toUpperCase(),
         latitude: parsedLatitude,
         longitude: parsedLongitude,
-        urlFoto: photoUrl.trim() || undefined,
+        urlFoto,
       })
       onUpdated(updated)
       onOpenChange(false)
     } catch (err) {
       setSubmitError(
-        err instanceof ApiError ? err.message : "Não foi possível salvar a praia."
+        err instanceof ApiError || err instanceof ImageUploadError ? err.message : "Não foi possível salvar a praia."
       )
     } finally {
       setIsSubmitting(false)
@@ -221,15 +227,13 @@ export function EditBeachModal({
             Use o centro da praia. A distância até os usuários é calculada a partir desse ponto.
           </p>
         )}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={photoUrlId}>URL da foto: (opcional)</Label>
-          <Input
-            id={photoUrlId}
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
-            placeholder="https://..."
-          />
-        </div>
+        <ImageFileInput
+          id={photoId}
+          label="Foto: (opcional)"
+          file={photo.file}
+          onFileChange={photo.setFile}
+          disabled={isSubmitting}
+        />
         {submitError && (
           <span className="text-xs text-destructive">{submitError}</span>
         )}
@@ -239,7 +243,7 @@ export function EditBeachModal({
             Cancelar
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Salvando..." : "Salvar"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>

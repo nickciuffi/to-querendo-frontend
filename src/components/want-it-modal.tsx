@@ -1,5 +1,6 @@
 import { useId, useState } from "react"
 
+import { ImageFileInput } from "@/components/image-file-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -12,18 +13,11 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useImageUpload } from "@/hooks/use-image-upload"
+import { ImageUploadError } from "@/services/arquivo-service"
 import { ApiError } from "@/services/http-client"
 import { createPurchaseIntention } from "@/services/purchase-intention-service"
 import type { Product } from "@/lib/types"
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
 
 export function WantItModal({
   product,
@@ -40,7 +34,7 @@ export function WantItModal({
 
   const [description, setDescription] = useState("")
   const [observations, setObservations] = useState("")
-  const [photo, setPhoto] = useState<File | null>(null)
+  const photo = useImageUpload("intencoes-compra")
   const [error, setError] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -48,12 +42,13 @@ export function WantItModal({
   function resetForm() {
     setDescription("")
     setObservations("")
-    setPhoto(null)
+    photo.reset()
     setError(false)
     setSubmitError(null)
   }
 
   async function handleConfirm() {
+    if (isSubmitting) return
     if (!description.trim()) {
       setError(true)
       return
@@ -62,17 +57,22 @@ export function WantItModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // Primeiro a foto (opcional): se o upload falhar, a intenção não é criada. Se a criação
+      // falhar depois, a próxima tentativa reaproveita a foto já enviada.
+      const urlFotoLocal = await photo.upload()
       await createPurchaseIntention({
         idProdutoBase: product.id,
         descricaoLocal: description.trim(),
         observacoes: observations.trim() || undefined,
-        urlFotoLocal: photo ? await readFileAsDataUrl(photo) : undefined,
+        urlFotoLocal,
       })
       onOpenChange(false)
       resetForm()
     } catch (err) {
       setSubmitError(
-        err instanceof ApiError ? err.message : "Não foi possível enviar. Tente novamente."
+        err instanceof ApiError || err instanceof ImageUploadError
+          ? err.message
+          : "Não foi possível enviar. Tente novamente."
       )
     } finally {
       setIsSubmitting(false)
@@ -83,6 +83,8 @@ export function WantItModal({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
+        // Não deixa fechar no meio do envio.
+        if (isSubmitting && !nextOpen) return
         onOpenChange(nextOpen)
         if (!nextOpen) resetForm()
       }}
@@ -124,16 +126,13 @@ export function WantItModal({
             placeholder="Ex: com manteiga, sem açucar, bem gelado, etc."
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={photoId}>Foto do local: (opcional)</Label>
-          <input
-            id={photoId}
-            type="file"
-            accept="image/*"
-            onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
-            className="text-sm text-muted-foreground file:mr-2 file:rounded-lg file:border-0 file:bg-muted file:px-2.5 file:py-1 file:text-sm file:font-medium file:text-foreground"
-          />
-        </div>
+        <ImageFileInput
+          id={photoId}
+          label="Foto do local: (opcional)"
+          file={photo.file}
+          onFileChange={photo.setFile}
+          disabled={isSubmitting}
+        />
         {submitError && (
           <span className="text-xs text-destructive">{submitError}</span>
         )}
@@ -143,7 +142,7 @@ export function WantItModal({
             Cancelar
           </DialogClose>
           <Button onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? "Enviando..." : "Confirmar"}
+            {photo.isUploading ? "Enviando imagem..." : isSubmitting ? "Enviando..." : "Confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>

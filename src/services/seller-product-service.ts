@@ -66,7 +66,8 @@ export async function createProdutoEspecifico(
 export interface UpdateProdutoEspecificoPayload {
   nome: string
   descricao: string
-  urlFoto: string
+  /** Omitido = mantém a foto atual; `""` = remove a foto. */
+  urlFoto?: string
   preco: number
   produtoAtivo: boolean
 }
