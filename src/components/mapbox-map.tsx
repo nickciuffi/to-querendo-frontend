@@ -1,7 +1,9 @@
 import * as React from "react"
 import mapboxgl from "mapbox-gl"
+import { LocateFixed } from "lucide-react"
 import "mapbox-gl/dist/mapbox-gl.css"
 
+import { useGeolocation } from "@/hooks/use-geolocation"
 import type { MapMarker } from "@/lib/types"
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
@@ -61,6 +63,34 @@ function createMarkerElement(marker: MapMarker, isSelected: boolean) {
   } else {
     el.textContent = MARKER_FALLBACK_ICON
   }
+  return el
+}
+
+const USER_DOT_COLOR = "#1a73e8"
+
+/** Ponto azul com halo pulsante que indica a posição atual do usuário. */
+function createUserLocationElement() {
+  const el = document.createElement("div")
+  el.setAttribute("aria-label", "Sua localização")
+  el.style.cssText = "position:relative;width:1.1rem;height:1.1rem;pointer-events:none"
+
+  const halo = document.createElement("div")
+  halo.style.cssText =
+    "position:absolute;inset:0;border-radius:9999px;background:" + USER_DOT_COLOR + ";opacity:.35"
+  halo.animate(
+    [
+      { transform: "scale(1)", opacity: 0.45 },
+      { transform: "scale(3)", opacity: 0 },
+    ],
+    { duration: 2000, iterations: Infinity, easing: "ease-out" }
+  )
+
+  const dot = document.createElement("div")
+  dot.style.cssText =
+    "position:absolute;inset:0;border-radius:9999px;border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,.35);background:" +
+    USER_DOT_COLOR
+
+  el.append(halo, dot)
   return el
 }
 
@@ -136,6 +166,31 @@ export function MapboxMap({
     }
   }, [map, markers, selectedMarkerId])
 
+  // Ponto azul da localização atual do usuário: criado uma vez por mapa e só movido depois.
+  const { position: userPosition } = useGeolocation()
+  const userMarkerRef = React.useRef<mapboxgl.Marker | null>(null)
+  const userLng = userPosition?.longitude
+  const userLat = userPosition?.latitude
+
+  React.useEffect(() => {
+    if (!map) return
+    return () => {
+      userMarkerRef.current?.remove()
+      userMarkerRef.current = null
+    }
+  }, [map])
+
+  React.useEffect(() => {
+    if (!map || userLng === undefined || userLat === undefined) return
+    if (!userMarkerRef.current) {
+      userMarkerRef.current = new mapboxgl.Marker({ element: createUserLocationElement() })
+        .setLngLat([userLng, userLat])
+        .addTo(map)
+    } else {
+      userMarkerRef.current.setLngLat([userLng, userLat])
+    }
+  }, [map, userLng, userLat])
+
   // Centraliza na praia uma vez por instância do mapa e por `centerKey`, para não reposicionar
   // enquanto o usuário navega. Sem coordenadas da praia, usa o primeiro marcador quando a lista chega.
   const centeredRef = React.useRef<{ map: mapboxgl.Map; key: string } | null>(null)
@@ -170,7 +225,27 @@ export function MapboxMap({
     )
   }
 
-  return <div ref={containerRef} className="h-full w-full" />
+  const recenterOnUser = () => {
+    if (!map || userLng === undefined || userLat === undefined) return
+    map.flyTo({ center: [userLng, userLat], zoom: Math.max(map.getZoom(), BEACH_ZOOM) })
+  }
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+      {/* Fica logo abaixo dos botões de zoom do Mapbox (canto superior direito). */}
+      <button
+        type="button"
+        onClick={recenterOnUser}
+        disabled={userLng === undefined}
+        aria-label="Centralizar na minha localização"
+        title={userLng === undefined ? "Localização indisponível" : "Centralizar na minha localização"}
+        className="absolute top-[78px] right-[10px] z-10 flex size-[29px] items-center justify-center rounded-[4px] bg-white text-neutral-700 shadow-[0_0_0_2px_rgba(0,0,0,0.1)] hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300 disabled:hover:bg-white"
+      >
+        <LocateFixed className="size-[18px]" style={{ color: userLng === undefined ? undefined : USER_DOT_COLOR }} />
+      </button>
+    </div>
+  )
 }
 
 const FALLBACK_POSITIONS = [
