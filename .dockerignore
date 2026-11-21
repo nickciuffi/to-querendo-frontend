@@ -1,0 +1,12 @@
+node_modules
+dist
+dev-dist
+.git
+.claude
+Claude outputs
+.env
+.env.*
+*.log
+.vscode
+.idea
+certbot
