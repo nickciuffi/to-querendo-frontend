@@ -1,0 +1,35 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL no .env}
+        VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN:?defina VITE_MAPBOX_TOKEN no .env}
+    container_name: toquerendo-web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?defina DOMAIN no .env}
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - toquerendo-net
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:v3.0.1
+    container_name: toquerendo-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # Tenta renovar a cada 12h (só renova quando faltam < 30 dias para expirar)
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"
+    restart: unless-stopped
+
+networks:
+  # Rede criada pelo docker compose do backend (to-querendo-api).
+  # Suba o backend primeiro para ela existir.
+  toquerendo-net:
+    external: true
